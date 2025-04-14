@@ -1,34 +1,26 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import './index.css'
+
+// import the shadcn button component (make sure it's created)
+import { Button } from "@/components/ui/button"
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [clicked, setClicked] = useState(false)
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 text-gray-900 p-4">
+      <h1 className="text-3xl font-bold mb-6">ShadCN + Tailwind v4 Test</h1>
+      
+      <Button onClick={() => setClicked(true)} className="mb-4">
+        Click me!
+      </Button>
+
+      {clicked && (
+        <p className="text-green-600 font-medium transition-all">
+          ✅ ShadCN and Tailwind are working!
         </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+      )}
+    </div>
   )
 }
 
