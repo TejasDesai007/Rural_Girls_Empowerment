@@ -1,29 +1,52 @@
-// controllers/authController.js
-const { admin, db } = require("../config/firebase");
-
-exports.verifyGoogleToken = async (req, res) => {
-  const idToken = req.body.idToken;
-
-  try {
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    const uid = decodedToken.uid;
-
-    // Optional: Add user to Firestore (if not exists)
-    const userRef = db.collection("Users").doc(uid);
-    const userDoc = await userRef.get();
-
-    if (!userDoc.exists) {
-      await userRef.set({
-        email: decodedToken.email,
-        name: decodedToken.name || "",
-        picture: decodedToken.picture || "",
-        createdAt: new Date(),
+  const { admin, db } = require("../config/firebase");
+  const session = require("express-session");
+  const handleGoogleAuth = async (req, res) => {
+    const { idToken, role, contact, name: clientName } = req.body;
+  
+    try {
+      const decodedToken = await admin.auth().verifyIdToken(idToken);
+      const { uid, email, name: firebaseName, picture } = decodedToken;
+      const finalName = clientName || firebaseName;
+  
+      const usersRef = db.collection("users");
+      const snapshot = await usersRef.where("email", "==", email).get();
+  
+      if (!snapshot.empty) {
+        const existingUser = snapshot.docs[0].data();
+        req.session.user = existingUser;
+        return res.status(200).json({
+          message: "User already exists. Please login.",
+          ...existingUser,
+          alreadyExists: true,
+        });
+      }
+  
+      const newUser = {
+        uid,
+        email,
+        name: finalName,
+        contact: contact || "",
+        picture,
+        role: role || "user",
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+  
+      await db.collection("users").doc(uid).set(newUser);
+      req.session.user = newUser;
+  
+      res.status(200).json({
+        message: "User created and session stored.",
+        ...newUser,
+        alreadyExists: false,
       });
+    } catch (error) {
+      console.error("Google Sign-in Error:", error);
+      res.status(500).json({ message: "Internal server error." });
     }
+  };
 
-    res.status(200).json({ message: "User verified", uid });
-  } catch (error) {
-    console.error("Token verification error:", error);
-    res.status(401).json({ error: "Invalid or expired token" });
-  }
-};
+
+
+  module.exports = {
+    handleGoogleAuth,
+  };

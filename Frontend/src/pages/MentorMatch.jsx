@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Clock } from "lucide-react";
-// import MentorMatchForm from "@/components/MentorMatchForm";
+import MentorMatchForm from "@/components/MentorMatchForm";
 
 const MentorMatch = () => {
   return (
@@ -17,7 +17,7 @@ const MentorMatch = () => {
 
         <AvailableMentorsList />
 
-        <ScheduleSection />
+        
       </section>
     </div>
   );
