@@ -45,7 +45,7 @@ function App() {
         <Route path="/user-management" element={<UserManagement />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/addcourse" element={<AddCourse />} />
-        <Route path="/my-profile" element={<MyProfile />} />
+        
       </Routes>
     </Router>
   );

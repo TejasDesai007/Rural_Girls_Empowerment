@@ -55,21 +55,21 @@ export default function Navbar() {
     mentor: [
       { name: "Home", path: "/" },
       { name: "Assistant", path: "/chat-assistant" },
-      { name: "Add Course", path: "/add-course" },
+      { name: "Add Course", path: "/addcourse" },
       { name: "My profile", path: "/my-profile"},
       { name: "Notification", path: "/mentor-notification"}
     ],
     admin: [
       { name: "Home", path: "/" },
       { name: "Dashboard", path: "/admin-panel" },
-      { name: "User Management", path: "/admin/users" },
-      { name: "Reports", path: "/admin/reports" },
+      { name: "User Management", path: "/user-management" },
+      { name: "Reports", path: "/reports" },
       { name: "Courses", path: "/courses" },
       { name: "Mentorship", path: "/mentor-match" },
       { name: "Toolkits", path: "/toolkit" },
       { name: "Assistant", path: "/chat-assistant" },
       { name: "Entrepreneur Tools", path: "/entrepreneur-toolkit" },
-      { name: "Add Course", path: "/add-course" },
+      { name: "Add Course", path: "/addcourse" },
       { name: "My profile", path: "/my-profile"}
     ],
   };

@@ -4,23 +4,44 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner"; // ✅ correctly used
-import { db } from "@/firebase";
-import { collection, addDoc } from "firebase/firestore";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge"; // For displaying selected tags
+import { Navigate } from "react-router-dom";
+
 
 export default function AddCourse() {
   const [courseData, setCourseData] = useState({
     title: "",
     description: "",
     category: "",
+    difficulty: "", // Added difficulty level
+    tags: [], // Added tags array
     thumbnail: null,
     videoLink: "",
     modules: [],
   });
 
+  const difficultyLevels = ["Beginner", "Intermediate", "Advanced"];
+  const availableTags = ["Business", "Technology", "Design", "Marketing", "Development", "Skills"];
   const [moduleInput, setModuleInput] = useState("");
   const [lessonInput, setLessonInput] = useState("");
   const [selectedModule, setSelectedModule] = useState(null);
+
+  const handleTagToggle = (tag) => {
+    setCourseData(prev => {
+      if (prev.tags.includes(tag)) {
+        return {
+          ...prev,
+          tags: prev.tags.filter(t => t !== tag)
+        };
+      } else {
+        return {
+          ...prev,
+          tags: [...prev.tags, tag]
+        };
+      }
+    });
+  };
 
   const handleCourseChange = (e) => {
     const { name, value } = e.target;
@@ -33,18 +54,24 @@ export default function AddCourse() {
   };
 
   const addModule = () => {
-    if (!moduleInput.trim()) return;
+    if (!moduleInput.trim()) {
+      toast.warning("Module title cannot be empty");
+      return;
+    }
+
     const newModule = {
-      title: moduleInput,
+      title: moduleInput.trim(),
       lessons: [],
     };
-    setCourseData((prev) => ({
-      ...prev,
-      modules: [...prev.modules, newModule],
-    }));
-    setModuleInput("");
-  };
 
+    setCourseData(prev => ({
+      ...prev,
+      modules: [...prev.modules, newModule]
+    }));
+
+    setModuleInput("");
+    toast.success("Module added successfully");
+  };
   const addLesson = () => {
     if (!lessonInput.trim() || selectedModule === null) return;
 
@@ -57,59 +84,72 @@ export default function AddCourse() {
     setCourseData((prev) => ({ ...prev, modules: updatedModules }));
     setLessonInput("");
   };
-
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent form submission before validation
-    const { title, description, category, videoLink, thumbnail, modules } = courseData;
+    e.preventDefault();
+    const {
+      title,
+      description,
+      category,
+      difficulty,
+      tags,
+      videoLink,
+      thumbnail,
+      modules
+    } = courseData;
 
-    // Basic field validation
-    if (!title.trim() || !description.trim() || !category.trim() || !videoLink.trim()) {
-      toast.error("Please fill in all required fields.");
+    // Basic validation
+    if (!title.trim() || !description.trim() || !category.trim()) {
+      toast.error("Please fill in all required fields");
       return;
     }
 
-    // Validate video link (basic YouTube/Drive check)
-    const videoRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be|drive\.google\.com)\/.+$/;
-    if (!videoRegex.test(videoLink)) {
-      toast.error("Please enter a valid YouTube or Google Drive link.");
+    if (!thumbnail) {
+      toast.error("Please upload a thumbnail image");
       return;
     }
 
-    // Validate thumbnail file type
-    if (thumbnail) {
-      const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
-      if (!allowedTypes.includes(thumbnail.type)) {
-        toast.error("Only JPG, PNG, or WEBP images are allowed as thumbnails.");
-        return;
-      }
-    }
-
-    // Optional: ensure at least one module added
     if (modules.length === 0) {
-      toast.error("Please add at least one module to the course.");
+      toast.error("Please add at least one module");
       return;
     }
 
     try {
-      const { thumbnail, ...dataToSubmit } = courseData;
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("description", description);
+      formData.append("category", category);
+      formData.append("difficulty", difficulty);
+      formData.append("tags", JSON.stringify(tags)); // Convert array to JSON string
+      formData.append("videoLink", videoLink);
+      formData.append("thumbnail", thumbnail);
+      formData.append("modules", JSON.stringify(modules));
 
-      const docRef = await addDoc(collection(db, "courses"), {
-        ...dataToSubmit,
-        createdAt: new Date(),
+      const res = await fetch("http://localhost:5000/api/courses/addCourse", {
+        method: "POST",
+        body: formData,
       });
 
-      toast.success("Course added successfully.");
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to save course");
+      }
+
+      toast.success("Course added successfully!");
       setCourseData({
         title: "",
         description: "",
         category: "",
+        difficulty: "",
+        tags: [],
         thumbnail: null,
         videoLink: "",
         modules: [],
       });
+      Navigate("/courses");
     } catch (err) {
-      console.error("Error adding course:", err);
-      toast.error("Failed to add course.");
+      console.error("Submission error:", err);
+      toast.error(err.message || "Failed to add course. Please try again.");
     }
   };
 
@@ -142,6 +182,45 @@ export default function AddCourse() {
                 />
               </div>
             </div>
+            {/* Difficulty Level Selection */}
+            <div>
+              <Label>Difficulty Level</Label>
+              <div className="flex gap-4 mt-2">
+                {difficultyLevels.map(level => (
+                  <Button
+                    key={level}
+                    type="button"
+                    variant={courseData.difficulty === level ? "default" : "outline"}
+                    onClick={() => setCourseData(prev => ({ ...prev, difficulty: level }))}
+                  >
+                    {level}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label>Tags</Label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {availableTags.map(tag => (
+                  <Badge
+                    key={tag}
+                    variant={courseData.tags.includes(tag) ? "default" : "outline"}
+                    className="cursor-pointer px-3 py-1"
+                    onClick={() => handleTagToggle(tag)}
+                  >
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+              <div className="mt-2">
+                {courseData.tags.length > 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    Selected: {courseData.tags.join(", ")}
+                  </p>
+                )}
+              </div>
+            </div>
+
 
             <div>
               <Label>Description</Label>
@@ -177,6 +256,7 @@ export default function AddCourse() {
         </Card>
 
         {/* Module & Lessons */}
+        {/* Module & Lessons */}
         <Card>
           <CardHeader>
             <CardTitle>Modules & Lessons</CardTitle>
@@ -187,35 +267,47 @@ export default function AddCourse() {
                 placeholder="Module Title"
                 value={moduleInput}
                 onChange={(e) => setModuleInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && addModule()}
               />
-              <Button onClick={addModule}>Add Module</Button>
+              <Button type="button" onClick={addModule}>
+                Add Module
+              </Button>
             </div>
 
-            {courseData.modules.map((mod, index) => (
-              <div key={index} className="border rounded-md p-4 space-y-2">
-                <h3 className="font-semibold text-lg">
-                  {index + 1}. {mod.title}
-                </h3>
-                <div className="flex gap-4 items-center">
-                  <Input
-                    placeholder="Lesson Title"
-                    value={selectedModule === index ? lessonInput : ""}
-                    onChange={(e) => {
-                      setSelectedModule(index);
-                      setLessonInput(e.target.value);
-                    }}
-                  />
-                  <Button onClick={addLesson}>Add Lesson</Button>
-                </div>
-                {mod.lessons.length > 0 && (
-                  <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-                    {mod.lessons.map((lesson, idx) => (
-                      <li key={idx}>{lesson}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ))}
+            <div className="space-y-4">
+              {courseData.modules.length > 0 ? (
+                courseData.modules.map((mod, index) => (
+                  <div key={index} className="border rounded-md p-4 space-y-2">
+                    <h3 className="font-semibold text-lg">
+                      {index + 1}. {mod.title}
+                    </h3>
+                    <div className="flex gap-4 items-center">
+                      <Input
+                        placeholder="Lesson Title"
+                        value={selectedModule === index ? lessonInput : ""}
+                        onChange={(e) => {
+                          setSelectedModule(index);
+                          setLessonInput(e.target.value);
+                        }}
+                        onKeyDown={(e) => e.key === 'Enter' && addLesson()}
+                      />
+                      <Button type="button" onClick={addLesson}>
+                        Add Lesson
+                      </Button>
+                    </div>
+                    {mod.lessons.length > 0 && (
+                      <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                        {mod.lessons.map((lesson, idx) => (
+                          <li key={idx}>{lesson}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-center py-4">No modules added yet</p>
+              )}
+            </div>
           </CardContent>
         </Card>
 
