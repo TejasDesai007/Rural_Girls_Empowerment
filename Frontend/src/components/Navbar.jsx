@@ -9,16 +9,18 @@ import logo from "../assets/icons/logo.png";
 import { auth } from "../firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 
-export default function Navbar({ variant = "user" }) {
+export default function Navbar() {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user); // Set user state based on auth status
-    });
-    return () => unsubscribe();
+    const storedUser = sessionStorage.getItem("user");
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+    }
   }, []);
+
 
   const handleLogout = async () => {
     try {
@@ -47,22 +49,33 @@ export default function Navbar({ variant = "user" }) {
       { name: "Toolkits", path: "/toolkit" },
       { name: "Assistant", path: "/chat-assistant" },
       { name: "Entrepreneur Tools", path: "/entrepreneur-toolkit" },
+      { name: "My profile", path: "/my-profile"},
+      { name: "Notification", path: "/mentor-notification"}
     ],
     mentor: [
       { name: "Home", path: "/" },
-      { name: "My Mentees", path: "/mentees" },
-      { name: "Schedule", path: "/mentor-schedule" },
-      { name: "Resources", path: "/mentor-resources" },
+      { name: "Assistant", path: "/chat-assistant" },
+      { name: "Add Course", path: "/add-course" },
+      { name: "My profile", path: "/my-profile"},
+      { name: "Notification", path: "/mentor-notification"}
     ],
     admin: [
       { name: "Home", path: "/" },
       { name: "Dashboard", path: "/admin-panel" },
       { name: "User Management", path: "/admin/users" },
       { name: "Reports", path: "/admin/reports" },
+      { name: "Courses", path: "/courses" },
+      { name: "Mentorship", path: "/mentor-match" },
+      { name: "Toolkits", path: "/toolkit" },
+      { name: "Assistant", path: "/chat-assistant" },
+      { name: "Entrepreneur Tools", path: "/entrepreneur-toolkit" },
+      { name: "Add Course", path: "/add-course" },
+      { name: "My profile", path: "/my-profile"}
     ],
   };
 
-  const currentLinks = navLinks[user ? variant : "guest"];
+  const currentLinks = navLinks[user?.role || "guest"];
+
 
   return (
     <nav className="w-full sticky top-0 z-50 bg-white shadow-md border-b border-gray-200">
