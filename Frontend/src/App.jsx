@@ -21,6 +21,10 @@ import Reports from "./pages/Reports";
 import AddCourse from "./pages/AddCourse";
 import MyProfile from "./pages/MyProfile";
 
+
+//Mentor imports
+import MentorNotification from "./pages/MentorNotification";
+
 function App() {
   return (
     <Router>
@@ -46,6 +50,8 @@ function App() {
         <Route path="/reports" element={<Reports />} />
         <Route path="/addcourse" element={<AddCourse />} />
         <Route path="/my-profile" element={<MyProfile />} />
+
+        <Route path="/mentor-notification" element={<MentorNotification />} />
       </Routes>
     </Router>
   );

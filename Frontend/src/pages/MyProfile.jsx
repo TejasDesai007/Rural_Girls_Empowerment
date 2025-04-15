@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Modal, ModalTrigger, ModalContent, ModalHeader, ModalFooter, ModalBody } from "@/components/ui/modal";
 import { toast } from "sonner"; // For notifications
 import { db, auth } from "@/firebase";
 import { updateProfile } from "firebase/auth";
@@ -111,7 +110,7 @@ function RolePermissionsInfo({ user }) {
 }
 
 // Delete Account Warning Box
-function DeleteAccountWarningBox({ onDelete }) {
+function DeleteAccountWarningBox({ onDelete, showModal, setShowModal }) {
   return (
     <Card>
       <CardHeader>
@@ -121,24 +120,24 @@ function DeleteAccountWarningBox({ onDelete }) {
         <p className="text-sm text-red-600">
           This action is irreversible. Once deleted, your account will be permanently removed from the platform.
         </p>
-        <Modal>
-          <ModalTrigger>
-            <Button className="bg-red-600 hover:bg-red-700">Delete Account</Button>
-          </ModalTrigger>
-          <ModalContent>
-            <ModalHeader>Confirm Deletion</ModalHeader>
-            <ModalBody>
-              <p className="text-sm text-gray-600">
+        <Button onClick={() => setShowModal(true)} className="bg-red-600 hover:bg-red-700">
+          Delete Account
+        </Button>
+
+        {showModal && (
+          <div className="fixed inset-0 z-50 bg-gray-600 bg-opacity-50 flex justify-center items-center">
+            <div className="bg-white p-6 rounded-md shadow-lg max-w-sm w-full">
+              <h2 className="text-xl font-semibold">Confirm Deletion</h2>
+              <p className="text-sm text-gray-600 mb-4">
                 Are you sure you want to delete your account? This action is permanent and cannot be undone.
               </p>
-            </ModalBody>
-            <ModalFooter>
-              <Button onClick={() => onDelete()} className="bg-red-600 hover:bg-red-700">
-                Yes, Delete Account
-              </Button>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
+              <div className="flex justify-end space-x-4">
+                <Button onClick={() => setShowModal(false)} className="bg-gray-300 hover:bg-gray-400">Cancel</Button>
+                <Button onClick={onDelete} className="bg-red-600 hover:bg-red-700">Yes, Delete Account</Button>
+              </div>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -146,6 +145,7 @@ function DeleteAccountWarningBox({ onDelete }) {
 
 export default function MyProfile({ user }) {
   const [userInfo, setUserInfo] = useState(user);
+  const [showModal, setShowModal] = useState(false);
 
   const handleDeleteAccount = async () => {
     try {
@@ -167,7 +167,11 @@ export default function MyProfile({ user }) {
       <ProfileHeaderCard user={userInfo} />
       <AccountDetailsForm user={userInfo} onUpdate={handleProfileUpdate} />
       <RolePermissionsInfo user={userInfo} />
-      <DeleteAccountWarningBox onDelete={handleDeleteAccount} />
+      <DeleteAccountWarningBox
+        onDelete={handleDeleteAccount}
+        showModal={showModal}
+        setShowModal={setShowModal}
+      />
     </div>
   );
 }
