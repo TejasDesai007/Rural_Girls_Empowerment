@@ -5,6 +5,7 @@ const bodyParser = require("body-parser");
 
 const authRoutes = require("./routes/authRoutes");
 
+
 const app = express();
 const PORT = 5000;
 
