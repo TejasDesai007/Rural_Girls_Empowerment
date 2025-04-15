@@ -33,7 +33,10 @@ const Register = () => {
       const response = await axios.post("http://localhost:5000/api/auth/google", {
         idToken,
         role,
+        contact: formData.contact,
+        name: formData.name,
       });
+
 
       const data = response.data;
       sessionStorage.setItem("user", JSON.stringify(data));
@@ -44,6 +47,31 @@ const Register = () => {
       console.error("Google authentication failed:", error);
     }
   };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+
+    try {
+      const response = await axios.post("http://localhost:5000/api/auth/register", {
+        ...formData,
+        role,
+      });
+
+      const data = response.data;
+      sessionStorage.setItem("user", JSON.stringify(data));
+      alert("Account created successfully!");
+      navigate("/dashboard");
+    } catch (err) {
+      if (err.response && err.response.data.message) {
+        alert(err.response.data.message);
+      } else {
+        console.error("Registration failed:", err);
+        alert("Something went wrong.");
+      }
+    }
+  };
+
+
 
   const validateForm = () => {
     const newErrors = {};
@@ -61,14 +89,8 @@ const Register = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
 
-    // TODO: Hook into your backend or Firebase signup logic here
-    alert(`Registered as ${role} successfully!`);
-    navigate("/dashboard");
-  };
+
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.id]: e.target.value }));

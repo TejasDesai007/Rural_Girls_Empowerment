@@ -1,64 +1,52 @@
-const { admin, db } = require("../config/firebase");
-const session = require("express-session");
-
-const handleGoogleAuth = async (req, res) => {
-  const { idToken } = req.body;
-
-  try {
-    // Verify the Firebase ID token
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    const { uid, email, name, picture } = decodedToken;
-
-    console.log("Authenticated user:", { uid, email, name, picture });
-
-    // Check if the user already exists in Firestore
-    const userRef = db.collection("users").doc(uid);
-    const userDoc = await userRef.get();
-
-    if (!userDoc.exists) {
-      // If the user doesn't exist, add the user to Firestore
-      await userRef.set({
+  const { admin, db } = require("../config/firebase");
+  const session = require("express-session");
+  const handleGoogleAuth = async (req, res) => {
+    const { idToken, role, contact, name: clientName } = req.body;
+  
+    try {
+      const decodedToken = await admin.auth().verifyIdToken(idToken);
+      const { uid, email, name: firebaseName, picture } = decodedToken;
+      const finalName = clientName || firebaseName;
+  
+      const usersRef = db.collection("users");
+      const snapshot = await usersRef.where("email", "==", email).get();
+  
+      if (!snapshot.empty) {
+        const existingUser = snapshot.docs[0].data();
+        req.session.user = existingUser;
+        return res.status(200).json({
+          message: "User already exists. Please login.",
+          ...existingUser,
+          alreadyExists: true,
+        });
+      }
+  
+      const newUser = {
         uid,
         email,
-        name,
+        name: finalName,
+        contact: contact || "",
         picture,
+        role: role || "user",
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
-      console.log("User added to Firestore");
-
-      // Create session and send response for new user
-      req.session.user = { uid, email, name, picture };
-
+      };
+  
+      await db.collection("users").doc(uid).set(newUser);
+      req.session.user = newUser;
+  
       res.status(200).json({
-        message: "User authenticated, session created, and stored in Firestore",
-        uid,
-        email,
-        name,
-        picture,
+        message: "User created and session stored.",
+        ...newUser,
         alreadyExists: false,
       });
-    } else {
-      // If the user already exists, don't save again to Firestore, just create session
-      console.log("User already exists in Firestore");
-
-      // Create session without saving user to Firestore
-      req.session.user = { uid, email, name, picture };
-
-      res.status(200).json({
-        message: "User already exists. Session created.",
-        uid,
-        email,
-        name,
-        picture,
-        alreadyExists: true,
-      });
+    } catch (error) {
+      console.error("Google Sign-in Error:", error);
+      res.status(500).json({ message: "Internal server error." });
     }
-  } catch (error) {
-    console.error("Token verification failed:", error);
-    res.status(401).json({ message: "Unauthorized" });
-  }
-};
+  };
 
-module.exports = {
-  handleGoogleAuth,
-};
+
+
+  module.exports = {
+    handleGoogleAuth,
+  };
