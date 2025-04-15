@@ -1,26 +1,40 @@
-const { db } = require("../config/firebase");
-const path = require("path");
+const { db, admin } = require("../config/firebase");
 
 exports.createCourse = async (req, res) => {
   try {
+    // Get the authorization token from headers
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ 
+        success: false, 
+        message: "Unauthorized: No token provided" 
+      });
+    }
+
+    const token = authHeader.split('Bearer ')[1];
+
+    // Verify the token and get the UID
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    const uid = decodedToken.uid;
+
     const { 
       title, 
       description, 
       category, 
-      difficulty, // Added difficulty
-      tags,       // Added tags
+      difficulty,
+      tags,
       videoLink, 
-      modules 
+      modules
     } = req.body;
 
     // Parse the JSON strings
     const parsedModules = JSON.parse(modules);
-    const parsedTags = tags ? JSON.parse(tags) : []; // Handle tags if they exist
+    const parsedTags = tags ? JSON.parse(tags) : [];
 
     let thumbnailUrl = "";
 
     if (req.file) {
-      // Create URL for frontend use
       thumbnailUrl = `${req.protocol}://${req.get("host")}/uploads/thumbnails/${req.file.filename}`;
     }
 
@@ -28,13 +42,14 @@ exports.createCourse = async (req, res) => {
       title,
       description,
       category,
-      difficulty, // Include difficulty
-      tags: parsedTags, // Include parsed tags array
+      difficulty,
+      tags: parsedTags,
       videoLink,
       thumbnailUrl,
       modules: parsedModules,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdBy: uid, // Store the creator's UID
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
     const docRef = await db.collection("courses").add(courseDoc);

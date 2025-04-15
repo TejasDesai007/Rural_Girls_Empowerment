@@ -4,6 +4,8 @@ const multer = require("multer");
 const path = require("path");
 const { createCourse } = require("../controllers/courseController");
 const { getCourses } = require("../controllers/getCoursesController");
+const coursePlayerController = require('../controllers/getCoursePlayerController');
+const authMiddleware = require('../middlewares/authMiddleware');
 
 // Setup Multer with disk storage
 const storage = multer.diskStorage({
@@ -20,5 +22,7 @@ const upload = multer({ storage });
 
 router.post("/addCourse", upload.single("thumbnail"), createCourse);
 router.get("/getCourses", getCourses);
-
+router.get('/:courseId', authMiddleware, coursePlayerController.getCourseDetails);
+router.post('/:courseId/lessons/:lessonId/notes', authMiddleware, coursePlayerController.saveNotes);
+router.get('/:courseId/lessons/:lessonId/notes', authMiddleware, coursePlayerController.getNotes);
 module.exports = router;

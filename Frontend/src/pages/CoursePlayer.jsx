@@ -1,21 +1,85 @@
 // src/pages/CoursePlayer.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChevronLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { getAuth } from "firebase/auth";
+import { toast } from "react-hot-toast";
 
 const CoursePlayer = () => {
+  const { courseId } = useParams();
   const navigate = useNavigate();
+  const auth = getAuth();
   const [selectedLesson, setSelectedLesson] = useState(0);
   const [notes, setNotes] = useState("");
+  const [course, setCourse] = useState(null);
+  const [lessons, setLessons] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const lessons = [
-    { title: "Introduction to Business", videoUrl: "https://www.youtube.com/embed/z2B1XP9mIr4" },
-    { title: "Market Research", videoUrl: "https://www.youtube.com/embed/1M2iP-yy1rA" },
-    { title: "Managing Finances", videoUrl: "https://www.youtube.com/embed/gN0OH_xk4IU" },
-  ];
+  useEffect(() => {
+    const fetchCourseData = async () => {
+      try {
+        const user = auth.currentUser;
+        if (!user) throw new Error("User not authenticated");
+
+        const token = await user.getIdToken();
+        const response = await fetch(`http://localhost:5000/api/courses/${courseId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || "Failed to fetch course");
+
+        setCourse(data.data.course);
+        setLessons(data.data.lessons);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching course:", error);
+        toast.error(error.message);
+        navigate("/courses");
+      }
+    };
+
+    fetchCourseData();
+  }, [courseId]);
+
+  const handleSaveNotes = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) throw new Error("User not authenticated");
+
+      const token = await user.getIdToken();
+      const currentLesson = lessons[selectedLesson];
+
+      const response = await fetch(
+        `http://localhost:5000/api/courses/${courseId}/lessons/${currentLesson.lessonId}/notes`,
+        {
+          method: "POST",
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ notes })
+        }
+      );
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Failed to save notes");
+
+      toast.success("Notes saved successfully!");
+    } catch (error) {
+      console.error("Error saving notes:", error);
+      toast.error(error.message);
+    }
+  };
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-white text-gray-900 flex flex-col lg:flex-row">
@@ -30,9 +94,16 @@ const CoursePlayer = () => {
       <div className="flex-1 p-6 space-y-6">
         <BackToCoursesBtn onClick={() => navigate("/courses")} />
 
-        <VideoPlayer videoUrl={lessons[selectedLesson].videoUrl} title={lessons[selectedLesson].title} />
+        <VideoPlayer
+          videoUrl={lessons[selectedLesson].videoUrl}
+          title={lessons[selectedLesson].title}
+        />
 
-        <NotesSection notes={notes} setNotes={setNotes} />
+        <NotesSection
+          notes={notes}
+          setNotes={setNotes}
+          onSave={handleSaveNotes}
+        />
       </div>
     </div>
   );

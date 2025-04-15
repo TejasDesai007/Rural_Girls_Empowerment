@@ -25,6 +25,7 @@ const Courses = () => {
 
         // Extract the array from the data property
         setCourses(Array.isArray(result.data) ? result.data : []);
+        console.log(Array.isArray(result.data) ? result.data : []);
       } catch (error) {
         console.error("Error fetching courses:", error);
         toast.error("Failed to load courses");
@@ -45,11 +46,11 @@ const Courses = () => {
     const title = course.title || '';
     const category = course.category || '';
     const difficulty = course.difficulty || '';
-    
+
     const matchesSearch = title.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === "All" || category === selectedCategory;
     const matchesDifficulty = selectedDifficulty === "All" || difficulty === selectedDifficulty;
-    
+
     return matchesSearch && matchesCategory && matchesDifficulty;
   });
 
@@ -61,7 +62,7 @@ const Courses = () => {
     <div className="min-h-screen bg-white text-gray-900">
       <PageHeader />
       <div className="flex flex-col lg:flex-row gap-6 px-6 py-10 max-w-7xl mx-auto">
-        <CategorySidebar 
+        <CategorySidebar
           categories={categories}
           selectedCategory={selectedCategory}
           setSelectedCategory={setSelectedCategory}
@@ -76,8 +77,8 @@ const Courses = () => {
           ) : (
             <div className="text-center py-10">
               <p className="text-lg text-gray-600">No courses found matching your criteria</p>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="mt-4"
                 onClick={() => {
                   setSearchTerm("");
@@ -115,9 +116,9 @@ const SearchBar = ({ searchTerm, setSearchTerm }) => (
   </div>
 );
 
-const CategorySidebar = ({ 
+const CategorySidebar = ({
   categories,
-  selectedCategory, 
+  selectedCategory,
   setSelectedCategory,
   difficulties,
   selectedDifficulty,
@@ -129,8 +130,8 @@ const CategorySidebar = ({
       <ul className="space-y-2 mb-6">
         {categories.map((cat) => (
           <li key={cat}>
-            <Button 
-              variant={selectedCategory === cat ? "default" : "ghost"} 
+            <Button
+              variant={selectedCategory === cat ? "default" : "ghost"}
               className="w-full justify-start"
               onClick={() => setSelectedCategory(cat)}
             >
@@ -143,8 +144,8 @@ const CategorySidebar = ({
       <ul className="space-y-2">
         {difficulties.map((difficulty) => (
           <li key={difficulty}>
-            <Button 
-              variant={selectedDifficulty === difficulty ? "default" : "ghost"} 
+            <Button
+              variant={selectedDifficulty === difficulty ? "default" : "ghost"}
               className="w-full justify-start"
               onClick={() => setSelectedDifficulty(difficulty)}
             >
@@ -167,15 +168,36 @@ const CourseGrid = ({ courses }) => (
 
 const CourseCard = ({ course }) => {
   const totalLessons = course.modules?.reduce((acc, module) => acc + (module.lessons?.length || 0), 0) || 0;
-  const date = course.createdAt?._seconds 
-    ? new Date(course.createdAt._seconds * 1000).toLocaleDateString() 
+  const date = course.createdAt?._seconds
+    ? new Date(course.createdAt._seconds * 1000).toLocaleDateString()
     : '';
+
+  // Enhanced creator display logic
+  const renderCreator = () => {
+    if (course.creator) {
+      return (
+        <p className="mt-2">
+          <span className="font-medium">Created by:</span> {course.creator.name || course.creator.email}
+        </p>
+      );
+    }
+    
+    if (course.createdBy) {
+      return (
+        <p className="mt-2 text-gray-500">
+          <span className="font-medium">Creator ID:</span> {course.createdBy.substring(0, 6)}...
+        </p>
+      );
+    }
+    
+    return null;
+  };
 
   return (
     <Card className="hover:shadow-md transition h-full flex flex-col">
       <div className="relative aspect-video overflow-hidden">
-        <img 
-          src={course.thumbnailUrl || "https://via.placeholder.com/300x200"} 
+        <img
+          src={course.thumbnailUrl || "https://via.placeholder.com/300x200"}
           alt={course.title}
           className="w-full h-full object-cover"
         />
@@ -196,6 +218,7 @@ const CourseCard = ({ course }) => {
           <p>Modules: {course.modules?.length || 0}</p>
           <p>Lessons: {totalLessons}</p>
           {date && <p>Created: {date}</p>}
+          {renderCreator()}
         </div>
       </CardContent>
       <CardFooter>

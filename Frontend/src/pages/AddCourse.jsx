@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge"; // For displaying selected tags
-import { Navigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { getAuth } from "firebase/auth";
 
 
 export default function AddCourse() {
@@ -20,6 +21,7 @@ export default function AddCourse() {
     videoLink: "",
     modules: [],
   });
+
 
   const difficultyLevels = ["Beginner", "Intermediate", "Advanced"];
   const availableTags = ["Business", "Technology", "Design", "Marketing", "Development", "Skills"];
@@ -102,7 +104,7 @@ export default function AddCourse() {
       toast.error("Please fill in all required fields");
       return;
     }
-
+    const navigate = useNavigate();
     if (!thumbnail) {
       toast.error("Please upload a thumbnail image");
       return;
@@ -114,18 +116,31 @@ export default function AddCourse() {
     }
 
     try {
+      // Get current user and ID token
+      const auth = getAuth();
+      const user = auth.currentUser;
+
+      if (!user) {
+        throw new Error("You must be logged in to create a course");
+      }
+
+      const token = await user.getIdToken();
+
       const formData = new FormData();
       formData.append("title", title);
       formData.append("description", description);
       formData.append("category", category);
       formData.append("difficulty", difficulty);
-      formData.append("tags", JSON.stringify(tags)); // Convert array to JSON string
+      formData.append("tags", JSON.stringify(tags));
       formData.append("videoLink", videoLink);
       formData.append("thumbnail", thumbnail);
       formData.append("modules", JSON.stringify(modules));
 
       const res = await fetch("http://localhost:5000/api/courses/addCourse", {
         method: "POST",
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
         body: formData,
       });
 
@@ -146,13 +161,12 @@ export default function AddCourse() {
         videoLink: "",
         modules: [],
       });
-      Navigate("/courses");
+      navigate("/courses");
     } catch (err) {
       console.error("Submission error:", err);
       toast.error(err.message || "Failed to add course. Please try again.");
     }
   };
-
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
       <h1 className="text-3xl font-bold text-purple-700">Add New Course</h1>
