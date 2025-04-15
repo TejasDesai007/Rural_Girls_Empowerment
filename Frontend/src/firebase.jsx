@@ -1,5 +1,4 @@
-// src/firebase.js (modular v9+ syntax)
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApp, getApps } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
@@ -14,8 +13,8 @@ const firebaseConfig = {
   measurementId: "G-WJZ57QBK75",
 };
 
-// Initialize Firebase App
-const app = initializeApp(firebaseConfig);
+// Check if Firebase has already been initialized
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 // Export Firestore, Auth, and Provider
 const db = getFirestore(app);

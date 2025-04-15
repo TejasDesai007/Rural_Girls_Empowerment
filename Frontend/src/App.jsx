@@ -8,10 +8,14 @@ import MentorMatch from "./pages/MentorMatch";
 import Toolkit from "./pages/Toolkit";
 import Register from "./pages/Register";
 import ChatAssistant from "./pages/ChatAssistant";
+import EntrepreneurToolkit from "./pages/EntrepreneurToolkit";
+
+import Navbar from "./components/Navbar";
 
 function App() {
   return (
     <Router>
+      <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/courses" element={<Courses />} />
@@ -20,6 +24,7 @@ function App() {
         <Route path="/toolkit" element={<Toolkit />} />
         <Route path="/register" element={<Register />} />
         <Route path="/chat-assistant" element={<ChatAssistant />} />
+        <Route path="/entrepreneur-toolkit" element={<EntrepreneurToolkit />} />
       </Routes>
     </Router>
   );
