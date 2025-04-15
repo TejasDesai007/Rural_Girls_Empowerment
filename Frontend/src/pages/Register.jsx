@@ -15,12 +15,21 @@ const Register = () => {
       const user = result.user;
       const idToken = await user.getIdToken();
 
-      // Send token to your backend for verification and saving to Firestore
-      await axios.post("http://localhost:5000/api/auth/google", {
+      const response = await axios.post("http://localhost:5000/api/auth/google", {
         idToken,
       });
 
-      navigate("/dashboard");
+      const data = response.data;
+
+      // Store in sessionStorage
+      sessionStorage.setItem("user", JSON.stringify(data));
+
+      if (data.alreadyExists) {
+        alert("User already exists. Redirecting to login...");
+        navigate("/login");
+      } else {
+        navigate("/dashboard"); // Or any desired route
+      }
     } catch (error) {
       console.error("Google signup failed:", error);
     }
@@ -47,10 +56,7 @@ const Register = () => {
 
         <p className="text-sm text-center mt-6 text-gray-500">
           Already have an account?{" "}
-          <a
-            href="/login"
-            className="text-blue-600 font-medium hover:underline"
-          >
+          <a href="/login" className="text-blue-600 font-medium hover:underline">
             Login here
           </a>
         </p>

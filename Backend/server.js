@@ -1,14 +1,26 @@
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-const app = express();
+const express = require("express");
+const cors = require("cors");
+const session = require("express-session");
+const bodyParser = require("body-parser");
 
-require('./config/firebase'); // initializes Firebase once
+const authRoutes = require("./routes/authRoutes");
+
+const app = express();
+const PORT = 5000;
 
 app.use(cors());
 app.use(bodyParser.json());
+app.use(
+  session({
+    secret: "your_secret_key", // Replace with a strong secret key
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false }, // Set `secure: true` in production with HTTPS
+  })
+);
 
-const authRoutes = require("./routes/authRoutes");
 app.use("/api/auth", authRoutes);
 
-app.listen(5000, () => console.log('Server running on port 5000'));
+app.listen(PORT, () => {
+  console.log(`Server is running at http://localhost:${PORT}`);
+});
