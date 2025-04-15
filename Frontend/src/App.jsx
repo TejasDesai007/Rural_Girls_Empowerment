@@ -14,6 +14,13 @@ import EntrepreneurToolkit from "./pages/EntrepreneurToolkit";
 import About from "./pages/About";
 import Navbar from "./components/Navbar";
 
+// Admin imports
+import AdminPanel from "./pages/AdminPanel";
+import UserManagement from "./pages/UserManagement";
+import Reports from "./pages/Reports";
+import AddCourse from "./pages/AddCourse";
+import MyProfile from "./pages/MyProfile";
+
 function App() {
   return (
     <Router>
@@ -32,6 +39,13 @@ function App() {
         <Route path="/entrepreneur-toolkit" element={<EntrepreneurToolkit />} />
         <Route path="/about" element={<About />} />
         <Route path="/about" element={<About />} />
+
+        {/* Admin Routes */}
+        <Route path="/admin-panel" element={<AdminPanel />} />
+        <Route path="/user-management" element={<UserManagement />} />
+        <Route path="/reports" element={<Reports />} />
+        <Route path="/addcourse" element={<AddCourse />} />
+        <Route path="/my-profile" element={<MyProfile />} />
       </Routes>
     </Router>
   );
