@@ -17,7 +17,7 @@ const MentorMatch = () => {
 
         <AvailableMentorsList />
 
-        <ScheduleSection />
+        
       </section>
     </div>
   );

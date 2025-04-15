@@ -40,24 +40,28 @@ const Login = () => {
     if (!validateForm()) return;
 
     try {
-      const result = await signInWithEmailAndPassword(auth, formData.email, formData.password);
-      const user = result.user;
-      const idToken = await user.getIdToken();
-
       const response = await axios.post("http://localhost:5000/api/auth/login", {
-        idToken,
+        email: formData.email,
+        password: formData.password,
         role,
+      }, {
+        withCredentials: true, // Enables cookies to be sent
+        headers: {
+          "Content-Type": "application/json"
+        }
       });
 
       const data = response.data;
+      console.log(data);
       sessionStorage.setItem("user", JSON.stringify(data));
-      alert("Login successful!");
+      alert("welcome "  + data.name);
       navigate("/dashboard");
     } catch (err) {
       console.error("Login failed:", err);
       alert("Invalid credentials or user does not exist.");
     }
   };
+
 
   const handleGoogleAuth = async () => {
     try {
@@ -87,27 +91,16 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-100 to-blue-50 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 space-y-6">
         <h2 className="text-2xl font-bold text-center text-gray-800">
-          Log in as a {role === "user" ? "User" : "Mentor"}
+          Log In
         </h2>
 
-        <ToggleGroup
-          type="single"
-          value={role}
-          onValueChange={(val) => val && setRole(val)}
-          className="flex justify-center gap-4"
-        >
-          <ToggleGroupItem value="user" className="px-4 py-2 rounded-xl">
-            User
-          </ToggleGroupItem>
-          <ToggleGroupItem value="mentor" className="px-4 py-2 rounded-xl">
-            Mentor
-          </ToggleGroupItem>
-        </ToggleGroup>
+
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" value={formData.email} onChange={handleChange} />
+
             {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
           </div>
 
@@ -124,7 +117,7 @@ const Login = () => {
           </div>
 
           <Button type="submit" className="w-full bg-blue-600 text-white">
-            Log in as {role === "user" ? "User" : "Mentor"}
+            Log In
           </Button>
         </form>
 

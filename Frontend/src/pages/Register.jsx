@@ -40,7 +40,6 @@ const Register = () => {
 
       const data = response.data;
       sessionStorage.setItem("user", JSON.stringify(data));
-
       alert(data.alreadyExists ? "Welcome back!" : "Account created!");
       navigate("/dashboard");
     } catch (error) {
