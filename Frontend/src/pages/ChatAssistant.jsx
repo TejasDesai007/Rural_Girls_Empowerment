@@ -4,7 +4,19 @@ import { Textarea } from "@/components/ui/textarea";
 // import { sendGeminiPrompt } from "../services/aiService";
 import { LoaderCircle } from "lucide-react";
 import { db } from "../firebase"; // Firestore
-import firebase from "firebase/app"; // for timestamp
+import {
+    collection,
+    addDoc,
+    getDocs,
+    deleteDoc,
+    doc,
+    onSnapshot,
+    query,
+    orderBy,
+    writeBatch,
+    serverTimestamp,
+  } from "firebase/firestore";
+  
 
 const ChatAssistant = () => {
   const [messages, setMessages] = useState([]);
@@ -12,24 +24,23 @@ const ChatAssistant = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = db
-      .collection("chatMessages")
-      .orderBy("timestamp")
-      .onSnapshot((snapshot) => {
-        const loadedMessages = snapshot.docs.map((doc) => doc.data());
-        setMessages(loadedMessages);
-      });
-
+    const q = query(collection(db, "chatMessages"), orderBy("timestamp"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const loadedMessages = snapshot.docs.map((doc) => doc.data());
+      setMessages(loadedMessages);
+    });
     return () => unsubscribe();
   }, []);
+  
 
   const saveMessageToDB = async (role, content) => {
-    await db.collection("chatMessages").add({
+    await addDoc(collection(db, "chatMessages"), {
       role,
       content,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      timestamp: serverTimestamp(),
     });
   };
+  
 
   const handleSend = async (prompt) => {
     const newPrompt = prompt || input;
@@ -53,13 +64,14 @@ const ChatAssistant = () => {
   const handleQuickPrompt = (promptText) => handleSend(promptText);
 
   const handleClear = async () => {
-    const snapshot = await db.collection("chatMessages").get();
-    const batch = db.batch();
-    snapshot.forEach((doc) => batch.delete(doc.ref));
+    const snapshot = await getDocs(collection(db, "chatMessages"));
+    const batch = writeBatch(db);
+    snapshot.forEach((docSnap) => batch.delete(doc(db, "chatMessages", docSnap.id)));
     await batch.commit();
     setMessages([]);
     setInput("");
   };
+  
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-white p-4 md:p-8">
