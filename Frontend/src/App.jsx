@@ -8,6 +8,7 @@ import MentorMatch from "./pages/MentorMatch";
 import Toolkit from "./pages/Toolkit";
 import Register from "./pages/Register";
 import ChatAssistant from "./pages/ChatAssistant";
+import EntrepreneurToolkit from "./pages/EntrepreneurToolkit";
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
         <Route path="/toolkit" element={<Toolkit />} />
         <Route path="/register" element={<Register />} />
         <Route path="/chat-assistant" element={<ChatAssistant />} />
+        <Route path="/entrepreneur-toolkit" element={<EntrepreneurToolkit />} />
       </Routes>
     </Router>
   );
