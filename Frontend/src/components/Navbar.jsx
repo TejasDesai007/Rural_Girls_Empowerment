@@ -9,7 +9,7 @@ import logo from "../assets/icons/logo.png";
 import { auth } from "../firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 
-export default function Navbar() {
+export default function Navbar({ variant = "user" }) {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
@@ -22,22 +22,47 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth); // Firebase logout
-      setUser(null); // Clear user state
-      navigate("/"); // Redirect to home
+      await signOut(auth);
+      setUser(null);
+      navigate("/");
     } catch (error) {
       console.error("Logout failed:", error);
     }
   };
 
-  const navLinks = [
-    { name: "Home", path: "/" }, // Change this to root path
-    { name: "Courses", path: "/courses" },
-    { name: "Mentorship", path: "/mentor-match" }, // Updated route to "/mentor-match"
-    { name: "Toolkits", path: "/toolkit" },
-    { name: "Assistant", path: "/chat-assistant" }, // Updated route to "/chat-assistant"
-    { name: "Entrepreneur Tools", path: "/entrepreneur-toolkit" }, // Updated route to "/entrepreneur-toolkit"
-  ];
+  // Nav Links based on variant
+  const navLinks = {
+    guest: [
+      { name: "Home", path: "/" },
+      { name: "Courses", path: "/courses" },
+      { name: "Mentorship", path: "/mentor-match" },
+      { name: "Toolkits", path: "/toolkit" },
+      { name: "Assistant", path: "/chat-assistant" },
+      { name: "Entrepreneur Tools", path: "/entrepreneur-toolkit" },
+    ],
+    user: [
+      { name: "Home", path: "/" },
+      { name: "Courses", path: "/courses" },
+      { name: "Mentorship", path: "/mentor-match" },
+      { name: "Toolkits", path: "/toolkit" },
+      { name: "Assistant", path: "/chat-assistant" },
+      { name: "Entrepreneur Tools", path: "/entrepreneur-toolkit" },
+    ],
+    mentor: [
+      { name: "Home", path: "/" },
+      { name: "My Mentees", path: "/mentees" },
+      { name: "Schedule", path: "/mentor-schedule" },
+      { name: "Resources", path: "/mentor-resources" },
+    ],
+    admin: [
+      { name: "Home", path: "/" },
+      { name: "Dashboard", path: "/admin-panel" },
+      { name: "User Management", path: "/admin/users" },
+      { name: "Reports", path: "/admin/reports" },
+    ],
+  };
+
+  const currentLinks = navLinks[user ? variant : "guest"];
 
   return (
     <nav className="w-full sticky top-0 z-50 bg-white shadow-md border-b border-gray-200">
@@ -52,7 +77,7 @@ export default function Navbar() {
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-6">
-          {navLinks.map((link) => (
+          {currentLinks.map((link) => (
             <Link
               key={link.name}
               to={link.path}
@@ -95,7 +120,7 @@ export default function Navbar() {
             </SheetTrigger>
             <SheetContent className="bg-white">
               <div className="flex flex-col gap-4 mt-6">
-                {navLinks.map((link) => (
+                {currentLinks.map((link) => (
                   <Link
                     key={link.name}
                     to={link.path}
