@@ -1,5 +1,6 @@
 // src/pages/Home.jsx
 import React from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -24,7 +25,9 @@ const HeroSection = () => (
       Unlock opportunities with mentorship, courses, toolkits, and an AI assistant—all in your language.
     </p>
     <div className="flex justify-center gap-4">
+    <Link to="/register">
       <Button className="text-white bg-pink-600 hover:bg-pink-700">Register</Button>
+    </Link>
       <Button variant="outline">Learn More</Button>
     </div>
   </section>

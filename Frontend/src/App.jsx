@@ -5,6 +5,9 @@ import Home from "./pages/Home";
 import Courses from "./pages/Courses";
 import CoursePlayer from "./pages/CoursePlayer";
 import MentorMatch from "./pages/MentorMatch";
+import Toolkit from "./pages/Toolkit";
+import Register from "./pages/Register";
+import ChatAssistant from "./pages/ChatAssistant";
 
 function App() {
   return (
@@ -14,6 +17,9 @@ function App() {
         <Route path="/courses" element={<Courses />} />
         <Route path="/courses/:courseId" element={<CoursePlayer />} />
         <Route path="/mentor-match" element={<MentorMatch />} />
+        <Route path="/toolkit" element={<Toolkit />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/chat-assistant" element={<ChatAssistant />} />
       </Routes>
     </Router>
   );
