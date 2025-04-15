@@ -31,6 +31,7 @@ function App() {
         <Route path="/chat-assistant" element={<ChatAssistant />} />
         <Route path="/entrepreneur-toolkit" element={<EntrepreneurToolkit />} />
         <Route path="/about" element={<About />} />
+        <Route path="/about" element={<About />} />
       </Routes>
     </Router>
   );
