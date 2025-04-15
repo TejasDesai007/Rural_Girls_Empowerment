@@ -1,15 +1,25 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-// import { signInWithGoogle } from "../services/authService";
 import { Button } from "@/components/ui/button";
 import { FcGoogle } from "react-icons/fc";
+import { auth, provider } from "../firebase";
+import { signInWithPopup } from "firebase/auth";
+import axios from "axios";
 
 const Register = () => {
   const navigate = useNavigate();
 
   const handleGoogleSignup = async () => {
     try {
-      await signInWithGoogle();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      const idToken = await user.getIdToken();
+
+      // Send token to your backend for verification and saving to Firestore
+      await axios.post("http://localhost:5000/api/auth/google", {
+        idToken,
+      });
+
       navigate("/dashboard");
     } catch (error) {
       console.error("Google signup failed:", error);
