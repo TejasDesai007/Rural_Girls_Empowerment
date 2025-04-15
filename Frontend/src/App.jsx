@@ -10,9 +10,12 @@ import Register from "./pages/Register";
 import ChatAssistant from "./pages/ChatAssistant";
 import EntrepreneurToolkit from "./pages/EntrepreneurToolkit";
 
+import Navbar from "./components/Navbar";
+
 function App() {
   return (
     <Router>
+      <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/courses" element={<Courses />} />
