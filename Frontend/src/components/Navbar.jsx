@@ -49,28 +49,27 @@ export default function Navbar() {
       { name: "Toolkits", path: "/toolkit" },
       { name: "Assistant", path: "/chat-assistant" },
       { name: "Entrepreneur Tools", path: "/entrepreneur-toolkit" },
-      { name: "My profile", path: "/my-profile"},
-      { name: "Notification", path: "/mentor-notification"}
+      { name: "My profile", path: "/my-profile" },
+      { name: "Notification", path: "/mentor-notification" }
     ],
     mentor: [
       { name: "Home", path: "/" },
       { name: "Assistant", path: "/chat-assistant" },
-      { name: "Add Course", path: "/add-course" },
-      { name: "My profile", path: "/my-profile"},
-      { name: "Notification", path: "/mentor-notification"}
+      { name: "Add Course", path: "/addcourse" },
+      { name: "My profile", path: "/my-profile" },
+      { name: "Notification", path: "/mentor-notification" }
     ],
     admin: [
       { name: "Home", path: "/" },
       { name: "Dashboard", path: "/admin-panel" },
-      { name: "User Management", path: "/admin/users" },
-      { name: "Reports", path: "/admin/reports" },
+      { name: "User Management", path: "/user-management" },
       { name: "Courses", path: "/courses" },
       { name: "Mentorship", path: "/mentor-match" },
       { name: "Toolkits", path: "/toolkit" },
       { name: "Assistant", path: "/chat-assistant" },
       { name: "Entrepreneur Tools", path: "/entrepreneur-toolkit" },
-      { name: "Add Course", path: "/add-course" },
-      { name: "My profile", path: "/my-profile"}
+      { name: "Add Course", path: "/addcourse" },
+      { name: "My profile", path: "/my-profile" }
     ],
   };
 
@@ -112,6 +111,10 @@ export default function Navbar() {
             </>
           ) : (
             <>
+              {/* 👇 Show user info */}
+              <div className="text-sm text-gray-600 mr-2">
+                {user.displayName || user.email}
+              </div>
               <Button
                 variant="outline"
                 onClick={() => navigate("/dashboard")}
@@ -124,6 +127,7 @@ export default function Navbar() {
             </>
           )}
         </div>
+
 
         {/* Mobile Hamburger */}
         <div className="md:hidden">
