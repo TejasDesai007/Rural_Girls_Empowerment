@@ -5,21 +5,6 @@ import { motion } from "framer-motion";
 import axios from "axios";
 
 export default function About() {
-  const [emails, setEmails] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    axios.get("http://localhost:5000/api/admins")
-      .then((res) => {
-        setEmails(res.data.map(admin => admin.email));
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error fetching admin emails:", err);
-        setLoading(false);
-      });
-  }, []);
-
   const staticAdmins = [
     {
       name: "Tejas Desai",
@@ -50,7 +35,6 @@ export default function About() {
       connections: "500+"
     },
   ];
-  
 
   return (
     <div className="max-w-6xl mx-auto p-6 mt-6 space-y-12">
@@ -67,27 +51,17 @@ export default function About() {
         </p>
       </motion.div>
 
-      {/* 📧 Admin Emails */}
+      {/* ✨ Vision and Features Section */}
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.6 }}
         className="text-center"
       >
-        <h2 className="text-2xl font-semibold text-purple-600 mb-2">Our Admins</h2>
-        <p className="text-gray-600">Reach out to us:</p>
-        {loading ? (
-          <div className="flex flex-col items-center space-y-2 mt-4">
-            <Skeleton className="h-4 w-64" />
-            <Skeleton className="h-4 w-52" />
-          </div>
-        ) : (
-          <ul className="mt-3 space-y-1 text-sm text-gray-700">
-            {emails.map((email, idx) => (
-              <li key={idx}>{email}</li>
-            ))}
-          </ul>
-        )}
+        <h2 className="text-2xl font-semibold text-pink-600 mb-3">Our Vision</h2>
+        <p className="text-gray-700 max-w-4xl mx-auto text-lg leading-relaxed">
+          We envision a future where every girl, no matter where she lives, has the confidence and tools to become a creator, innovator, and changemaker. By integrating fun learning modules, interactive dashboards, and real-world toolkits, EmpowerHer transforms curiosity into capability.
+        </p>
       </motion.div>
 
       {/* 🔗 Static LinkedIn Cards */}

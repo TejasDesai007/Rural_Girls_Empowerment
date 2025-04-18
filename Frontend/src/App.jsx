@@ -20,10 +20,11 @@ import UserManagement from "./pages/UserManagement";
 import Reports from "./pages/Reports";
 import AddCourse from "./pages/AddCourse";
 import MyProfile from "./pages/MyProfile";
+import AddToolkit from "./pages/AddToolkit";
 
 
 //Mentor imports
-import MentorNotification from "./pages/MentorNotification";
+import MentorNotification from "./pages/Notification";
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
         <Route path="/entrepreneur-toolkit" element={<EntrepreneurToolkit />} />
         <Route path="/about" element={<About />} />
         <Route path="/my-profile" element={<MyProfile />} />
+        <Route path="/addtoolkit" element={<AddToolkit />} />
         
 
         {/* Admin Routes */}
