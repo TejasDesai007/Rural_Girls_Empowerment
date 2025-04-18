@@ -48,18 +48,21 @@ export default function Navbar() {
     guest: [],
     user: [
       { name: "My Profile", path: "/my-profile" },
-      { name: "Notifications", path: "/mentor-notification" },
+      { name: "Notifications", path: "/notification" },
     ],
     mentor: [
       { name: "Add Course", path: "/addcourse" },
       { name: "My Profile", path: "/my-profile" },
-      { name: "Notifications", path: "/mentor-notification" },
+      { name: "Notifications", path: "/notification" },
+      { name: "Add ToolKits", path: "/addtoolkit" },
     ],
     admin: [
       { name: "Dashboard", path: "/admin-panel" },
       { name: "User Management", path: "/user-management" },
       { name: "Add Course", path: "/addcourse" },
       { name: "My Profile", path: "/my-profile" },
+      { name: "Notifications", path: "/notification" },
+      { name: "Add ToolKits", path: "/addtoolkit" },
     ],
   }[user?.role || "guest"];
 
