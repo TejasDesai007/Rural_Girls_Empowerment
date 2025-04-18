@@ -21,6 +21,10 @@ import Reports from "./pages/Reports";
 import AddCourse from "./pages/AddCourse";
 import MyProfile from "./pages/MyProfile";
 
+
+//Mentor imports
+import MentorNotification from "./pages/MentorNotification";
+
 function App() {
   return (
     <Router>
