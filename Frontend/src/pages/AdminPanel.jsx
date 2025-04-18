@@ -3,22 +3,53 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { BarChart3, Users, FileText, PlusCircle } from "lucide-react";
-import { auth } from "../firebase";
+import { Users, PlusCircle } from "lucide-react";
+import { auth, db } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import { collection, getDocs } from "firebase/firestore";
 
 export default function AdminPanel() {
   const [admin, setAdmin] = useState(null);
+  const [usersCount, setUsersCount] = useState(0);
+  const [coursesCount, setCoursesCount] = useState(0);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      // Assume a claim or role-based check is handled elsewhere
-      if (user) setAdmin(user);
-      else navigate("/login");
+    let isMounted = true;
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        if (isMounted) setAdmin(user);
+        await fetchData();
+      } else {
+        navigate("/login");
+      }
     });
-    return () => unsubscribe();
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+
+      const [usersSnapshot, coursesSnapshot] = await Promise.all([
+        getDocs(collection(db, "users")),
+        getDocs(collection(db, "courses"))
+      ]);
+
+      setUsersCount(usersSnapshot.size);
+      setCoursesCount(coursesSnapshot.size);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const quickActions = [
     {
@@ -28,23 +59,11 @@ export default function AdminPanel() {
       onClick: () => navigate("/user-management"),
     },
     {
-      icon: <FileText className="h-6 w-6 text-purple-600" />,
-      title: "Reports",
-      description: "View usage and progress reports",
-      onClick: () => navigate("/reports"),
-    },
-    {
       icon: <PlusCircle className="h-6 w-6 text-purple-600" />,
       title: "Add Course",
       description: "Create and manage new courses",
       onClick: () => navigate("/addcourse"),
-    },
-    {
-      icon: <BarChart3 className="h-6 w-6 text-purple-600" />,
-      title: "Analytics",
-      description: "View platform performance and trends",
-      onClick: () => navigate("/admin/reports"), // redirecting to reports for now
-    },
+    }
   ];
 
   return (
@@ -59,9 +78,13 @@ export default function AdminPanel() {
       <Separator className="mb-8" />
 
       {/* Quick Actions */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 mb-12">
         {quickActions.map((action, idx) => (
-          <Card key={idx} className="cursor-pointer hover:shadow-lg transition" onClick={action.onClick}>
+          <Card
+            key={idx}
+            className="cursor-pointer hover:shadow-lg transition"
+            onClick={action.onClick}
+          >
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-base font-semibold text-gray-800">
                 {action.title}
@@ -75,17 +98,23 @@ export default function AdminPanel() {
         ))}
       </section>
 
-      {/* Stats (Optional) */}
+      {/* Stats */}
       <section>
         <h2 className="text-xl font-semibold mb-4 text-gray-800">Platform Overview</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
               <CardTitle>Total Users</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-purple-600">1,024</p>
-              <p className="text-xs text-muted-foreground">+8% from last week</p>
+              {loading ? (
+                <div className="animate-pulse h-8 w-16 bg-gray-200 rounded" />
+              ) : (
+                <>
+                  <p className="text-3xl font-bold text-purple-600">{usersCount}</p>
+                  <p className="text-xs text-muted-foreground">Registered users</p>
+                </>
+              )}
             </CardContent>
           </Card>
           <Card>
@@ -93,17 +122,14 @@ export default function AdminPanel() {
               <CardTitle>Courses Published</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-purple-600">78</p>
-              <p className="text-xs text-muted-foreground">+3 new this week</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Reports Filed</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-purple-600">21</p>
-              <p className="text-xs text-muted-foreground">-2 from last month</p>
+              {loading ? (
+                <div className="animate-pulse h-8 w-16 bg-gray-200 rounded" />
+              ) : (
+                <>
+                  <p className="text-3xl font-bold text-purple-600">{coursesCount}</p>
+                  <p className="text-xs text-muted-foreground">Available courses</p>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>

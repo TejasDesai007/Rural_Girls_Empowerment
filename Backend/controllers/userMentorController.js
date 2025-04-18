@@ -1,6 +1,5 @@
 const { admin, db } = require("../config/firebase");
 const bcrypt = require("bcrypt");
-
 const handleRegister = async (req, res) => {
   const { name, email, contact, password, role } = req.body;
 
@@ -22,8 +21,10 @@ const handleRegister = async (req, res) => {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
-    const docRef = await usersRef.add(newUser);
-    const userWithId = { ...newUser, id: docRef.id };
+    // Use email or uid from Auth as the Firestore document ID
+    const docRef = await usersRef.doc(email).set(newUser); // Use doc(email) to make sure the ID matches
+
+    const userWithId = { ...newUser, id: email }; // You can also use the uid here if needed
 
     req.session.user = userWithId;
 

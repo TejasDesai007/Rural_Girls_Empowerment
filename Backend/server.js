@@ -2,8 +2,9 @@ const express = require("express");
 const cors = require("cors");
 const session = require("express-session");
 const bodyParser = require("body-parser");
-
+const path = require("path");
 const authRoutes = require("./routes/authRoutes");
+const courseRoutes = require("./routes/courseRoutes");
 
 
 const app = express();
@@ -16,6 +17,7 @@ app.use(cors({
 }));
 
 app.use(bodyParser.json());
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use(
   session({
     secret: "your_secret_key", // Replace with a strong secret key
@@ -26,6 +28,8 @@ app.use(
 );
 
 app.use("/api/auth", authRoutes);
+app.use("/api/courses", courseRoutes);
+
 
 app.listen(PORT, () => {
   console.log(`Server is running at http://localhost:${PORT}`);
