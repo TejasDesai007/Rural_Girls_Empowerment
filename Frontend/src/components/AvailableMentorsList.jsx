@@ -33,7 +33,12 @@ const AvailableMentorsList = ({ onMentorSelect }) => {
 
   const handleRequestSession = (mentor) => {
     if (!auth.currentUser) {
-      navigate("/login", { state: { from: "/mentor-match", mentorId: mentor.id } });
+      navigate("/login", {
+        state: {
+          from: "/mentor-match",
+          mentorId: mentor.id
+        }
+      });
       return;
     }
     onMentorSelect(mentor);
@@ -43,6 +48,14 @@ const AvailableMentorsList = ({ onMentorSelect }) => {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+      </div>
+    );
+  }
+
+  if (mentors.length === 0) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <p>No mentors available at the moment.</p>
       </div>
     );
   }
@@ -76,17 +89,19 @@ const AvailableMentorsList = ({ onMentorSelect }) => {
                 </div>
               )}
 
-              <Button 
-                className="mt-2 w-full" 
+              <Button
+                className="mt-2 w-full"
                 onClick={() => handleRequestSession(mentor)}
               >
                 Request Session
               </Button>
+
             </CardContent>
           </Card>
-        ))}
-      </div>
-    </div>
+        ))
+        }
+      </div >
+    </div >
   );
 };
 

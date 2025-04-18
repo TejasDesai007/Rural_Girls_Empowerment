@@ -25,7 +25,7 @@ import AddToolkit from "./pages/AddToolkit";
 
 
 //Mentor imports
-import MentorNotification from "./pages/MentorNotification";
+import MentorNotification from "./pages/Notification";
 
 function App() {
   return (
