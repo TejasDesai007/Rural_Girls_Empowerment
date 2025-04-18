@@ -25,7 +25,7 @@ import AddToolkit from "./pages/AddToolkit";
 
 
 //Mentor imports
-import MentorNotification from "./pages/Notification";
+import MentorNotification from "./pages/MentorNotification";
 
 function App() {
   return (
@@ -55,6 +55,8 @@ function App() {
         <Route path="/addcourse" element={<AddCourse />} />
         <Route path="/add-toolkit" element={<AddToolkit />} />
         
+        {/* Notifications */}
+        <Route path="/mentor-notification" element={<MentorNotification />} />
       </Routes>
     </Router>
   );

@@ -5,7 +5,7 @@ import AvailableMentorsList from "@/components/AvailableMentorsList";
 import ScheduleSection from "@/components/ScheduleSection";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { db } from "../firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { addDoc, collection, getDocs } from "firebase/firestore";
 const MentorMatch = () => {
   const [selectedMentor, setSelectedMentor] = useState(null);
   const [menteeId, setMenteeId] = useState(null);
@@ -48,9 +48,26 @@ const MentorMatch = () => {
     }
   }, [location.state, mentors]);
 
-  const handleBookingComplete = () => {
-    setSelectedMentor(null);
-    alert("Booking request sent!");
+  const handleBookingComplete = async () => {
+    try {
+      // First, create a notification for the mentor
+      await addDoc(collection(db, "notifications"), {
+        title: "🔔 New Mentor Request",
+        description: `You have a new mentoring request from a mentee.`,
+        type: "mentee",
+        read: false,
+        createdAt: new Date(),
+        mentorId: selectedMentor.id, // Add this so you can filter notifications by mentor
+        menteeId: menteeId, // Optional: Include who sent the request
+      });
+
+      // Then reset the UI
+      setSelectedMentor(null);
+      alert("Booking request sent successfully!");
+    } catch (error) {
+      console.error("Error creating notification:", error);
+      alert("Failed to send booking request. Please try again.");
+    }
   };
 
   return (
