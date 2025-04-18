@@ -36,8 +36,17 @@ const Login = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleRedirectAfterLogin = () => {
-    const from = location.state?.from || "/dashboard";
+  const handleRedirectAfterLogin = (userRole) => {
+    // Use the role from the authenticated user data to determine redirect
+    const actualRole = userRole || role;
+    let from = location.state?.from || "/admin-panel";
+    
+    // If the user is not an admin but is being redirected to admin panel,
+    // redirect them to an appropriate dashboard based on their role
+    if (from === "/admin-panel" && actualRole !== "admin") {
+      from = actualRole === "mentor" ? "/mentor-dashboard" : "/user-dashboard";
+    }
+    
     const mentorId = location.state?.mentorId;
 
     if (from === "/mentor-match" && mentorId) {
@@ -69,8 +78,9 @@ const Login = () => {
 
       const data = response.data;
       sessionStorage.setItem("user", JSON.stringify(data));
+      sessionStorage.setItem("role", data.role);
       alert(`Welcome ${data.name}`);
-      handleRedirectAfterLogin();
+      handleRedirectAfterLogin(data.role);
     } catch (err) {
       console.error("Login failed:", err);
       alert("Invalid credentials or user does not exist.");
@@ -82,21 +92,30 @@ const Login = () => {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       const idToken = await user.getIdToken();
-
+  
       const response = await axios.post(
         "http://localhost:5000/api/auth/google",
-        { idToken, role }
+        { idToken },  // Remove role from here - let backend determine it
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "application/json"
+          }
+        }
       );
-
+  
       const data = response.data;
+  
       sessionStorage.setItem("user", JSON.stringify(data));
-      alert("Welcome back!");
-      handleRedirectAfterLogin();
+      sessionStorage.setItem("role", data.role);
+  
+      alert(`Welcome ${data.name}!`);
+      handleRedirectAfterLogin(data.role);
     } catch (error) {
       console.error("Google sign-in failed:", error);
       alert("Google sign-in failed. Please try again.");
     }
-  };
+  };  
 
   useEffect(() => {
     document.title = "Login | Rural Empowerment";
@@ -108,6 +127,25 @@ const Login = () => {
         <h2 className="text-2xl font-bold text-center text-gray-800">
           Log In
         </h2>
+        
+        {/* Add role toggle for manual login */}
+        <div className="space-y-2">
+          <Label htmlFor="role-selection">Select Role</Label>
+          <ToggleGroup 
+            type="single" 
+            id="role-selection"
+            value={role}
+            onValueChange={(value) => value && setRole(value)}
+            className="justify-center"
+          >
+            <ToggleGroupItem value="user" className="flex-1">User</ToggleGroupItem>
+            <ToggleGroupItem value="mentor" className="flex-1">Mentor</ToggleGroupItem>
+            <ToggleGroupItem value="admin" className="flex-1">Admin</ToggleGroupItem>
+          </ToggleGroup>
+          <p className="text-xs text-gray-500 text-center">
+            Role selection is for manual login only. Google login will use your saved role.
+          </p>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

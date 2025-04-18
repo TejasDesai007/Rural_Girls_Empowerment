@@ -1,5 +1,8 @@
 // src/App.jsx
 import React from "react";
+import { useEffect, useState } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "./firebase";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Courses from "./pages/Courses";
@@ -28,9 +31,31 @@ import AddToolkit from "./pages/AddToolkit";
 import MentorNotification from "./pages/MentorNotification";
 
 function App() {
+  const [variant, setVariant] = useState("guest");
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        const storedRole = sessionStorage.getItem("role");
+        if (storedRole === "admin") {
+          setVariant("admin");
+        } else if (storedRole === "mentor") {
+          setVariant("mentor");
+        } else {
+          setVariant("user");
+        }
+      } else {
+        setVariant("guest");
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+
   return (
     <Router>
-      <Navbar />
+      <Navbar variant={variant} />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/courses" element={<Courses />} />
@@ -40,13 +65,13 @@ function App() {
 
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
-        
+
         <Route path="/chat-assistant" element={<ChatAssistant />} />
         <Route path="/entrepreneur-toolkit" element={<EntrepreneurToolkit />} />
         <Route path="/about" element={<About />} />
         <Route path="/privacy-terms" element={<PrivacyTerms />} />
         <Route path="/my-profile" element={<MyProfile />} />
-        
+
 
         {/* Admin Routes */}
         <Route path="/admin-panel" element={<AdminPanel />} />
@@ -54,7 +79,7 @@ function App() {
         <Route path="/reports" element={<Reports />} />
         <Route path="/addcourse" element={<AddCourse />} />
         <Route path="/add-toolkit" element={<AddToolkit />} />
-        
+
         {/* Notifications */}
         <Route path="/mentor-notification" element={<MentorNotification />} />
       </Routes>
