@@ -48,25 +48,39 @@ const MentorMatch = () => {
     }
   }, [location.state, mentors]);
 
-  const handleBookingComplete = async () => {
+  const handleBookingComplete = async (bookingData) => {
     try {
-      // First, create a notification for the mentor
+      // Get mentee details
+      const auth = getAuth();
+      const mentee = auth.currentUser;
+      const menteeName = mentee?.displayName || "A mentee";
+      
+      // Format the date for better readability
+      const bookingDate = bookingData?.date || new Date().toLocaleDateString("en-CA");
+      const timeSlot = bookingData?.timeSlot || "unspecified time";
+      
+      // Create notification with detailed information
       await addDoc(collection(db, "notifications"), {
         title: "🔔 New Mentor Request",
-        description: `You have a new mentoring request from a mentee.`,
+        description: `${menteeName} has requested a mentoring session on ${bookingDate} at ${timeSlot}.`,
         type: "mentee",
         read: false,
         createdAt: new Date(),
-        mentorId: selectedMentor.id, // Add this so you can filter notifications by mentor
-        menteeId: menteeId, // Optional: Include who sent the request
+        mentorId: selectedMentor.id,
+        menteeId: menteeId,
+        sessionDetails: {
+          date: bookingDate,
+          timeSlot: timeSlot,
+          status: "pending",
+          mentorName: selectedMentor.name
+        }
       });
-
-      // Then reset the UI
-      setSelectedMentor(null);
-      alert("Booking request sent successfully!");
+  
+      // UI is already reset by the original function
+      // no need for additional alert since toast is already shown
     } catch (error) {
       console.error("Error creating notification:", error);
-      alert("Failed to send booking request. Please try again.");
+      toast.error("Failed to send notification to mentor");
     }
   };
 

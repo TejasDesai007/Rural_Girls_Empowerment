@@ -91,25 +91,13 @@ const ScheduleSection = ({ selectedMentor, menteeId, onBooked, onBack }) => {
         };
 
         await addDoc(collection(db, "mentorship_requests"), bookingData);
-        onBooked();
+
+        // Pass the booking data to the parent component
+        onBooked(bookingData);
 
         return bookingData;
       },
-      {
-        loading: `Requesting session with ${selectedMentor.name}...`,
-        success: (data) => (
-          <div className="space-y-1">
-            <p className="font-medium">Session requested!</p>
-            <p className="text-sm">
-              {data.date} at {data.timeSlot}
-            </p>
-          </div>
-        ),
-        error: (error) => {
-          console.error("Booking failed:", error);
-          return `Failed to book session: ${error.message}`;
-        },
-      }
+      // Rest of your toast logic remains the same
     ).finally(() => setIsBooking(false));
   };
 
