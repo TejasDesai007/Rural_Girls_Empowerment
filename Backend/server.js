@@ -30,6 +30,7 @@ app.use(
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
 
+
 app.listen(PORT, () => {
   console.log(`Server is running at http://localhost:${PORT}`);
 });

@@ -5,29 +5,29 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge"; // For displaying selected tags
+import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { getAuth } from "firebase/auth";
 
-
 export default function AddCourse() {
+  const navigate = useNavigate();
   const [courseData, setCourseData] = useState({
     title: "",
     description: "",
     category: "",
-    difficulty: "", // Added difficulty level
-    tags: [], // Added tags array
+    difficulty: "",
+    tags: [],
     thumbnail: null,
     videoLink: "",
     modules: [],
   });
-
 
   const difficultyLevels = ["Beginner", "Intermediate", "Advanced"];
   const availableTags = ["Business", "Technology", "Design", "Marketing", "Development", "Skills"];
   const [moduleInput, setModuleInput] = useState("");
   const [lessonInput, setLessonInput] = useState("");
   const [selectedModule, setSelectedModule] = useState(null);
+  const [lessonVideoLink, setLessonVideoLink] = useState(""); // New state for lesson video link
 
   const handleTagToggle = (tag) => {
     setCourseData(prev => {
@@ -74,18 +74,26 @@ export default function AddCourse() {
     setModuleInput("");
     toast.success("Module added successfully");
   };
+
   const addLesson = () => {
     if (!lessonInput.trim() || selectedModule === null) return;
 
+    const newLesson = {
+      title: lessonInput.trim(),
+      videoLink: lessonVideoLink.trim()
+    };
+
     const updatedModules = courseData.modules.map((mod, index) =>
       index === selectedModule
-        ? { ...mod, lessons: [...mod.lessons, lessonInput] }
+        ? { ...mod, lessons: [...mod.lessons, newLesson] }
         : mod
     );
 
     setCourseData((prev) => ({ ...prev, modules: updatedModules }));
     setLessonInput("");
+    setLessonVideoLink("");
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const {
@@ -99,12 +107,13 @@ export default function AddCourse() {
       modules
     } = courseData;
 
-    // Basic validation
     if (!title.trim() || !description.trim() || !category.trim()) {
       toast.error("Please fill in all required fields");
       return;
     }
-    const navigate = useNavigate();
+    
+    
+    
     if (!thumbnail) {
       toast.error("Please upload a thumbnail image");
       return;
@@ -116,7 +125,6 @@ export default function AddCourse() {
     }
 
     try {
-      // Get current user and ID token
       const auth = getAuth();
       const user = auth.currentUser;
 
@@ -167,12 +175,12 @@ export default function AddCourse() {
       toast.error(err.message || "Failed to add course. Please try again.");
     }
   };
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
       <h1 className="text-3xl font-bold text-purple-700">Add New Course</h1>
 
-      {/* Course Form */}
-      <form onSubmit={handleSubmit}> {/* Ensure the form has onSubmit */}
+      <form onSubmit={handleSubmit}>
         <Card>
           <CardHeader>
             <CardTitle>Course Details</CardTitle>
@@ -196,7 +204,6 @@ export default function AddCourse() {
                 />
               </div>
             </div>
-            {/* Difficulty Level Selection */}
             <div>
               <Label>Difficulty Level</Label>
               <div className="flex gap-4 mt-2">
@@ -235,7 +242,6 @@ export default function AddCourse() {
               </div>
             </div>
 
-
             <div>
               <Label>Description</Label>
               <Textarea
@@ -246,7 +252,7 @@ export default function AddCourse() {
             </div>
 
             <div>
-              <Label>Video Link</Label>
+              <Label>Preview Video Link</Label>
               <Input
                 name="videoLink"
                 value={courseData.videoLink}
@@ -269,8 +275,6 @@ export default function AddCourse() {
           </CardContent>
         </Card>
 
-        {/* Module & Lessons */}
-        {/* Module & Lessons */}
         <Card>
           <CardHeader>
             <CardTitle>Modules & Lessons</CardTitle>
@@ -291,30 +295,51 @@ export default function AddCourse() {
             <div className="space-y-4">
               {courseData.modules.length > 0 ? (
                 courseData.modules.map((mod, index) => (
-                  <div key={index} className="border rounded-md p-4 space-y-2">
+                  <div key={index} className="border rounded-md p-4 space-y-4">
                     <h3 className="font-semibold text-lg">
                       {index + 1}. {mod.title}
                     </h3>
-                    <div className="flex gap-4 items-center">
-                      <Input
-                        placeholder="Lesson Title"
-                        value={selectedModule === index ? lessonInput : ""}
-                        onChange={(e) => {
-                          setSelectedModule(index);
-                          setLessonInput(e.target.value);
-                        }}
-                        onKeyDown={(e) => e.key === 'Enter' && addLesson()}
-                      />
-                      <Button type="button" onClick={addLesson}>
-                        Add Lesson
-                      </Button>
+                    
+                    <div className="space-y-2">
+                      <div className="flex gap-4 items-center">
+                        <Input
+                          placeholder="Lesson Title"
+                          value={selectedModule === index ? lessonInput : ""}
+                          onChange={(e) => {
+                            setSelectedModule(index);
+                            setLessonInput(e.target.value);
+                          }}
+                        />
+                      </div>
+                      <div className="flex gap-4 items-center">
+                        <Input
+                          placeholder="Lesson Video Link"
+                          value={selectedModule === index ? lessonVideoLink : ""}
+                          onChange={(e) => {
+                            setSelectedModule(index);
+                            setLessonVideoLink(e.target.value);
+                          }}
+                          onKeyDown={(e) => e.key === 'Enter' && addLesson()}
+                        />
+                        <Button type="button" onClick={addLesson}>
+                          Add Lesson
+                        </Button>
+                      </div>
                     </div>
+                    
                     {mod.lessons.length > 0 && (
-                      <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                      <div className="space-y-2">
                         {mod.lessons.map((lesson, idx) => (
-                          <li key={idx}>{lesson}</li>
+                          <div key={idx} className="border p-3 rounded-md">
+                            <div className="font-medium">{idx + 1}. {lesson.title}</div>
+                            {lesson.videoLink && (
+                              <div className="text-sm text-gray-600 mt-1">
+                                Video: <a href={lesson.videoLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">{lesson.videoLink}</a>
+                              </div>
+                            )}
+                          </div>
                         ))}
-                      </ul>
+                      </div>
                     )}
                   </div>
                 ))
@@ -325,7 +350,6 @@ export default function AddCourse() {
           </CardContent>
         </Card>
 
-        {/* Submit Button */}
         <div className="flex justify-end">
           <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
             Save & Publish

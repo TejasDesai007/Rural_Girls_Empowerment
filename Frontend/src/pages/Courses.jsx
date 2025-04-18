@@ -6,7 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button";
 import { toast } from "react-hot-toast";
 import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { getAuth } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
+
 
 const Courses = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -14,32 +17,50 @@ const Courses = () => {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedDifficulty, setSelectedDifficulty] = useState("All");
+  const auth = getAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchCourses = async () => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       try {
-        const response = await fetch("http://localhost:5000/api/courses/getCourses");
+        setLoading(true);
+
+        if (!user) {
+          toast.error("Please login to view courses");
+          navigate("/login");
+          return;
+        }
+
+        const token = await user.getIdToken();
+        const response = await fetch("http://localhost:5000/api/courses/getCourses", {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to fetch courses");
+        }
+
         const result = await response.json();
-
-        if (!response.ok) throw new Error(result.message || "Failed to fetch courses");
-
-        // Extract the array from the data property
         setCourses(Array.isArray(result.data) ? result.data : []);
-        console.log(Array.isArray(result.data) ? result.data : []);
       } catch (error) {
         console.error("Error fetching courses:", error);
-        toast.error("Failed to load courses");
+        toast.error(error.message || "Failed to load courses");
         setCourses([]);
       } finally {
         setLoading(false);
       }
-    };
+    });
 
-    fetchCourses();
-  }, []);
+    return () => unsubscribe();
+  }, [auth, navigate]);
 
   // Get unique categories from courses
-  const categories = ["All", ...new Set(courses.map(course => course.category).filter(Boolean))];
+  const defaultCategories = ["Business", "Technology", "Design", "Marketing", "Development", "Skills"];
+  const categories = ["All", ...new Set([...defaultCategories, ...courses.map(course => course.category).filter(Boolean)])];
   const difficulties = ["All", "Beginner", "Intermediate", "Advanced"];
 
   const filteredCourses = courses.filter(course => {
@@ -55,7 +76,11 @@ const Courses = () => {
   });
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading courses...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+      </div>
+    );
   }
 
   return (
@@ -181,7 +206,7 @@ const CourseCard = ({ course }) => {
         </p>
       );
     }
-    
+
     if (course.createdBy) {
       return (
         <p className="mt-2 text-gray-500">
@@ -189,7 +214,7 @@ const CourseCard = ({ course }) => {
         </p>
       );
     }
-    
+
     return null;
   };
 
@@ -210,9 +235,7 @@ const CourseCard = ({ course }) => {
         <div className="flex flex-wrap gap-2 mb-2">
           <Badge variant="outline">{course.category}</Badge>
           {course.difficulty && <Badge variant="outline">{course.difficulty}</Badge>}
-          {course.tags?.map(tag => (
-            <Badge key={tag} variant="secondary">{tag}</Badge>
-          ))}
+         
         </div>
         <div className="text-sm text-gray-600">
           <p>Modules: {course.modules?.length || 0}</p>

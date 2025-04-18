@@ -6,23 +6,54 @@ const { createCourse } = require("../controllers/courseController");
 const { getCourses } = require("../controllers/getCoursesController");
 const coursePlayerController = require('../controllers/getCoursePlayerController');
 const authMiddleware = require('../middlewares/authMiddleware');
+const { validateCourseId } = require('../middlewares/validationMiddleware');
 
-// Setup Multer with disk storage
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads/thumbnails/");
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(), // Better for cloud storage
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+    files: 1
   },
-  filename: function (req, file, cb) {
-    const uniqueName = Date.now() + "_" + file.originalname;
-    cb(null, uniqueName);
-  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only JPEG, PNG, and WebP are allowed.'));
+    }
+  }
 });
 
-const upload = multer({ storage });
+// Course management routes
+router.post("/addCourse", 
+  authMiddleware,
+  upload.single("thumbnail"),
+  createCourse
+);
 
-router.post("/addCourse", upload.single("thumbnail"), createCourse);
-router.get("/getCourses", getCourses);
-router.get('/:courseId', authMiddleware, coursePlayerController.getCourseDetails);
-router.post('/:courseId/lessons/:lessonId/notes', authMiddleware, coursePlayerController.saveNotes);
-router.get('/:courseId/lessons/:lessonId/notes', authMiddleware, coursePlayerController.getNotes);
+router.get("/getCourses", 
+  authMiddleware,
+  getCourses
+);
+
+// Course player routes with validation
+router.get('/:courseId', 
+  authMiddleware,
+  validateCourseId,
+  coursePlayerController.getCourseDetails
+);
+
+router.post('/:courseId/lessons/:lessonId/notes', 
+  authMiddleware,
+  validateCourseId,
+  coursePlayerController.saveNotes
+);
+
+router.get('/:courseId/lessons/:lessonId/notes', 
+  authMiddleware,
+  validateCourseId,
+  coursePlayerController.getNotes
+);
+
 module.exports = router;

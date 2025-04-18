@@ -38,7 +38,8 @@ function App() {
         <Route path="/chat-assistant" element={<ChatAssistant />} />
         <Route path="/entrepreneur-toolkit" element={<EntrepreneurToolkit />} />
         <Route path="/about" element={<About />} />
-        <Route path="/about" element={<About />} />
+        <Route path="/my-profile" element={<MyProfile />} />
+        
 
         {/* Admin Routes */}
         <Route path="/admin-panel" element={<AdminPanel />} />
