@@ -19,6 +19,9 @@ const ScheduleSection = ({ selectedMentor, menteeId, onBooked, onBack }) => {
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
   const navigate = useNavigate();
+  const [isBooking, setIsBooking] = useState(false);
+
+
 
   // Redirect to login if not logged in
   useEffect(() => {
@@ -29,29 +32,29 @@ const ScheduleSection = ({ selectedMentor, menteeId, onBooked, onBack }) => {
     return () => unsubscribe();
   }, [navigate]);
 
-  // Check availability when date or timeSlot changes
   useEffect(() => {
     const checkAvailability = async () => {
-      if (!timeSlot || !selectedMentor?.id) return;
-      
+      if (!selectedMentor || !date || !timeSlot) return;
+
       setIsCheckingAvailability(true);
       try {
-        const dateString = date.toISOString().split('T')[0];
+        const dateString = date.toLocaleDateString("en-CA"); // Ensure this is defined before the query
+
         const q = query(
           collection(db, "mentorship_requests"),
           where("mentorId", "==", selectedMentor.id),
           where("date", "==", dateString),
           where("timeSlot", "==", timeSlot),
-          where("status", "in", ["accepted", "confirmed", "completed"])
+          where("status", "==", "confirm")
         );
 
         const querySnapshot = await getDocs(q);
         const available = querySnapshot.empty;
         setIsAvailable(available);
-        
+
         if (!available) {
           toast.warning(`${selectedMentor.name} is not available at ${timeSlot}`, {
-            description: 'Please choose a different time slot',
+            description: "Please choose a different time slot",
           });
         }
       } catch (error) {
@@ -63,19 +66,24 @@ const ScheduleSection = ({ selectedMentor, menteeId, onBooked, onBack }) => {
       }
     };
 
+
     const debounceTimer = setTimeout(checkAvailability, 500);
     return () => clearTimeout(debounceTimer);
-  }, [date, timeSlot, selectedMentor]);
+  }, [selectedMentor, date, timeSlot]);
+
+
 
   const handleBookSession = async () => {
     if (!timeSlot || !menteeId || !isAvailable) return;
+
+    setIsBooking(true);
 
     toast.promise(
       async () => {
         const bookingData = {
           mentorId: selectedMentor.id,
           menteeId,
-          date: date.toISOString().split("T")[0],
+          date: date.toLocaleDateString("en-CA"),
           timeSlot,
           status: "pending",
           mentorName: selectedMentor.name,
@@ -84,7 +92,7 @@ const ScheduleSection = ({ selectedMentor, menteeId, onBooked, onBack }) => {
 
         await addDoc(collection(db, "mentorship_requests"), bookingData);
         onBooked();
-        
+
         return bookingData;
       },
       {
@@ -102,7 +110,7 @@ const ScheduleSection = ({ selectedMentor, menteeId, onBooked, onBack }) => {
           return `Failed to book session: ${error.message}`;
         },
       }
-    );
+    ).finally(() => setIsBooking(false));
   };
 
   return (
@@ -165,9 +173,14 @@ const ScheduleSection = ({ selectedMentor, menteeId, onBooked, onBack }) => {
             className="w-full"
             size="lg"
             onClick={handleBookSession}
-            disabled={!timeSlot || !isAvailable || isCheckingAvailability}
+            disabled={!timeSlot || !isAvailable || isCheckingAvailability || isBooking}
           >
-            {isCheckingAvailability ? (
+            {isBooking ? (
+              <span className="flex items-center gap-2">
+                <Clock className="animate-spin" size={16} />
+                Booking...
+              </span>
+            ) : isCheckingAvailability ? (
               <span className="flex items-center gap-2">
                 <Clock className="animate-spin" size={16} />
                 Checking availability...
@@ -176,6 +189,7 @@ const ScheduleSection = ({ selectedMentor, menteeId, onBooked, onBack }) => {
               "Confirm Booking"
             )}
           </Button>
+
         </div>
       </div>
     </div>

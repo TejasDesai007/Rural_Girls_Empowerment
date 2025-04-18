@@ -23,7 +23,7 @@ import MyProfile from "./pages/MyProfile";
 
 
 //Mentor imports
-import MentorNotification from "./pages/MentorNotification";
+import MentorNotification from "./pages/Notification";
 
 function App() {
   return (
