@@ -1,37 +1,22 @@
-// aiService.js
-// Handles interaction with Google Gemini API
-// NOTE: You must replace <YOUR_GEMINI_API_KEY> with your actual key
-// OR load it from a secure .env file if using Vite (VITE_GEMINI_API_KEY)
+import axios from "axios";
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+// You can configure this with an env variable if needed
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 export const sendToGemini = async (prompt) => {
-  const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
-
-  const headers = {
-    "Content-Type": "application/json",
-  };
-
-  const body = {
-    contents: [{ parts: [{ text: prompt }] }],
-  };
-
   try {
-    const response = await fetch(`${url}?key=${GEMINI_API_KEY}`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(body),
+    const response = await axios.post(`${BACKEND_URL}/api/chat`, {
+      prompt: prompt, // Pass 'prompt' instead of 'newPrompt'
     });
 
-    const data = await response.json();
-
-    if (data && data.candidates && data.candidates.length > 0) {
-      return data.candidates[0].content.parts[0].text;
+    // Assuming backend returns { reply: "..." }
+    if (response.data && response.data.reply) {
+      return response.data.reply; // Updated field to `reply` from backend
     } else {
-      throw new Error("No valid response from Gemini.");
+      throw new Error("Invalid response from server.");
     }
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    return "❌ Failed to get a response from Gemini.";
+    console.error("Backend Chat API Error:", error);
+    throw new Error("❌ Failed to get a response from the server.");
   }
 };

@@ -1,77 +1,70 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-// import { sendGeminiPrompt } from "../services/aiService";
+import { sendToGemini } from "../services/aiService";
 import { LoaderCircle } from "lucide-react";
-import { db } from "../firebase"; // Firestore
-import {
-    collection,
-    addDoc,
-    getDocs,
-    deleteDoc,
-    doc,
-    onSnapshot,
-    query,
-    orderBy,
-    writeBatch,
-    serverTimestamp,
-  } from "firebase/firestore";
-  
 
 const ChatAssistant = () => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   useEffect(() => {
-    const q = query(collection(db, "chatMessages"), orderBy("timestamp"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const loadedMessages = snapshot.docs.map((doc) => doc.data());
-      setMessages(loadedMessages);
-    });
-    return () => unsubscribe();
-  }, []);
-  
+    scrollToBottom();
+  }, [messages]);
 
-  const saveMessageToDB = async (role, content) => {
-    await addDoc(collection(db, "chatMessages"), {
-      role,
-      content,
-      timestamp: serverTimestamp(),
-    });
-  };
-  
+  const handleSend = async (promptOverride) => {
+    const newPrompt = promptOverride || input.trim(); // Fix prompt handling
+    if (!newPrompt) return;
 
-  const handleSend = async (prompt) => {
-    const newPrompt = prompt || input;
-    if (!newPrompt.trim()) return;
-
-    const userMsg = { role: "user", content: newPrompt };
     setInput("");
     setLoading(true);
 
+    const userMsg = { role: "user", content: newPrompt };
+    setMessages((prev) => [...prev, userMsg]);
+
     try {
-      await saveMessageToDB("user", newPrompt);
-      const aiReply = await sendGeminiPrompt(newPrompt);
-      await saveMessageToDB("ai", aiReply);
+      const aiReply = await sendToGemini(newPrompt);
+      setMessages((prev) => [
+        ...prev,
+        { role: "ai", content: aiReply },
+      ]);
     } catch (err) {
-      await saveMessageToDB("ai", "❌ Failed to fetch response. Try again later.");
+      console.error("ChatAssistant handleSend error:", err);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "ai",
+          content: err.message || "❌ Failed to fetch response. Try again later.",
+        },
+      ]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleQuickPrompt = (promptText) => handleSend(promptText);
+  const handleQuickPrompt = (promptText) => {
+    if (!loading) {
+      handleSend(promptText);
+    }
+  };
 
-  const handleClear = async () => {
-    const snapshot = await getDocs(collection(db, "chatMessages"));
-    const batch = writeBatch(db);
-    snapshot.forEach((docSnap) => batch.delete(doc(db, "chatMessages", docSnap.id)));
-    await batch.commit();
+  const handleClear = () => {
     setMessages([]);
     setInput("");
   };
-  
+
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter" && !e.shiftKey && !loading) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-white p-4 md:p-8">
@@ -79,7 +72,6 @@ const ChatAssistant = () => {
         💬 Your Digital Assistant
       </h2>
 
-      {/* 🔘 PromptSuggestions */}
       <div className="flex flex-wrap justify-center gap-3 mb-6">
         {[
           "Suggest a business idea",
@@ -93,59 +85,85 @@ const ChatAssistant = () => {
             variant="outline"
             size="sm"
             onClick={() => handleQuickPrompt(prompt)}
+            disabled={loading}
           >
             {prompt}
           </Button>
         ))}
       </div>
 
-      {/* 💬 Chat Window */}
-      <div className="flex-1 bg-white rounded-xl shadow-inner p-4 overflow-y-auto border border-gray-200 mb-4">
-        {messages.length === 0 ? (
-          <p className="text-gray-400 text-center mt-10">
+      <div className="flex-1 bg-white rounded-xl shadow-inner p-4 overflow-y-auto border border-gray-200 mb-4 min-h-[40vh] flex flex-col">
+        {messages.length === 0 && !loading ? (
+          <p className="text-gray-400 text-center my-auto">
             Start a conversation by typing or selecting a quick prompt.
           </p>
         ) : (
           messages.map((msg, idx) => (
             <div
               key={idx}
-              className={`mb-4 max-w-3xl ${
-                msg.role === "user" ? "ml-auto text-right" : "mr-auto text-left"
+              className={`mb-4 max-w-3xl w-fit ${
+                msg.role === "user" ? "ml-auto" : "mr-auto"
               }`}
             >
               <div
-                className={`inline-block rounded-lg px-4 py-2 ${
+                className={`inline-block rounded-lg px-4 py-2 text-sm ${
                   msg.role === "user"
-                    ? "bg-blue-100 text-blue-800"
-                    : "bg-gray-100 text-gray-700"
+                    ? "bg-blue-100 text-blue-800 rounded-br-none"
+                    : msg.content.startsWith("❌")
+                    ? "bg-red-100 text-red-700 rounded-bl-none"
+                    : "bg-gray-100 text-gray-700 rounded-bl-none"
                 }`}
               >
-                {msg.content}
+                {msg.content.split("\n").map((line, i) => (
+                  <span key={i}>
+                    {line}
+                    <br />
+                  </span>
+                ))}
               </div>
             </div>
           ))
         )}
         {loading && (
-          <div className="flex justify-center mt-2 text-gray-500">
-            <LoaderCircle className="animate-spin w-5 h-5" />
+          <div className="flex justify-start items-center mt-2 text-gray-500">
+            <LoaderCircle className="animate-spin w-4 h-4 mr-2" />
+            <span>Thinking...</span>
           </div>
         )}
+        <div ref={messagesEndRef} />
       </div>
 
-      {/* 📝 Input + Controls */}
-      <div className="flex flex-col md:flex-row gap-3 items-center">
+      <div className="flex flex-col sm:flex-row gap-3 items-center">
         <Textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyPress}
           placeholder="Ask anything..."
-          className="w-full min-h-[3rem] md:min-h-[2.5rem]"
+          className="w-full min-h-[3rem] md:min-h-[2.5rem] resize-none"
+          rows={1}
+          disabled={loading}
         />
-        <Button onClick={() => handleSend()} disabled={loading}>
-          Send
-        </Button>
-        <Button variant="ghost" onClick={handleClear}>
-          Clear Chat
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button
+            onClick={() => handleSend()}
+            disabled={loading || !input.trim()}
+            className="flex-grow sm:flex-grow-0"
+          >
+            {loading ? (
+              <LoaderCircle className="animate-spin w-4 h-4" />
+            ) : (
+              "Send"
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={handleClear}
+            disabled={loading}
+            className="flex-grow sm:flex-grow-0"
+          >
+            Clear Chat
+          </Button>
+        </div>
       </div>
     </div>
   );

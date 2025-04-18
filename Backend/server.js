@@ -1,3 +1,5 @@
+require("dotenv").config(); // ✅ Load environment variables from .env
+
 const express = require("express");
 const cors = require("cors");
 const session = require("express-session");
@@ -5,19 +7,25 @@ const bodyParser = require("body-parser");
 const path = require("path");
 const authRoutes = require("./routes/authRoutes");
 const courseRoutes = require("./routes/courseRoutes");
-
+const chatRoutes = require("./routes/chatRoutes"); // Import the chat route
 
 const app = express();
 const PORT = 5000;
-app.use(cors({
-  credentials: true,
-  origin: "http://localhost:5173",
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
+
+// Middleware
+app.use(
+  cors({
+    credentials: true,
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 app.use(bodyParser.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// Session setup
 app.use(
   session({
     secret: "your_secret_key", // Replace with a strong secret key
@@ -27,9 +35,10 @@ app.use(
   })
 );
 
+// Routes setup
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
-
+app.use("/api/chat", chatRoutes); // Add chat route
 
 app.listen(PORT, () => {
   console.log(`Server is running at http://localhost:${PORT}`);
