@@ -12,6 +12,7 @@ import ChatAssistant from "./pages/ChatAssistant";
 import EntrepreneurToolkit from "./pages/EntrepreneurToolkit";
 
 import About from "./pages/About";
+import PrivacyTerms from "./pages/PrivacyTerms";
 import Navbar from "./components/Navbar";
 
 // Admin imports
@@ -20,6 +21,7 @@ import UserManagement from "./pages/UserManagement";
 import Reports from "./pages/Reports";
 import AddCourse from "./pages/AddCourse";
 import MyProfile from "./pages/MyProfile";
+import AddToolkit from "./pages/AddToolkit";
 
 
 //Mentor imports
@@ -42,6 +44,7 @@ function App() {
         <Route path="/chat-assistant" element={<ChatAssistant />} />
         <Route path="/entrepreneur-toolkit" element={<EntrepreneurToolkit />} />
         <Route path="/about" element={<About />} />
+        <Route path="/privacy-terms" element={<PrivacyTerms />} />
         <Route path="/my-profile" element={<MyProfile />} />
         
 
@@ -50,6 +53,7 @@ function App() {
         <Route path="/user-management" element={<UserManagement />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/addcourse" element={<AddCourse />} />
+        <Route path="/add-toolkit" element={<AddToolkit />} />
         
       </Routes>
     </Router>
