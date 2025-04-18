@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
-import { Menu } from "lucide-react";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { Menu, ChevronDown } from "lucide-react";
 import logo from "../assets/icons/logo.png";
 
-// Firebase Imports
 import { auth } from "../firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 
@@ -14,13 +14,25 @@ export default function Navbar() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const storedUser = sessionStorage.getItem("user");
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      setUser(parsedUser);
-    }
-  }, []);
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        const storedRole = sessionStorage.getItem("role") || "user";
+        const userData = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          role: storedRole,
+        };
+        setUser(userData);
+        sessionStorage.setItem("user", JSON.stringify(userData));
+      } else {
+        setUser(null);
+        sessionStorage.removeItem("user");
+      }
+    });
 
+    return () => unsubscribe();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -32,49 +44,24 @@ export default function Navbar() {
     }
   };
 
-  // Nav Links based on variant
-  const navLinks = {
-    guest: [
-      { name: "Home", path: "/" },
-      { name: "Courses", path: "/courses" },
-      { name: "Mentorship", path: "/mentor-match" },
-      { name: "Toolkits", path: "/toolkit" },
-      { name: "Assistant", path: "/chat-assistant" },
-      { name: "Entrepreneur Tools", path: "/entrepreneur-toolkit" },
-    ],
+  const currentLinks = {
+    guest: [],
     user: [
-      { name: "Home", path: "/" },
-      { name: "Courses", path: "/courses" },
-      { name: "Mentorship", path: "/mentor-match" },
-      { name: "Toolkits", path: "/toolkit" },
-      { name: "Assistant", path: "/chat-assistant" },
-      { name: "Entrepreneur Tools", path: "/entrepreneur-toolkit" },
-      { name: "My profile", path: "/my-profile" },
-      { name: "Notification", path: "/mentor-notification" }
+      { name: "My Profile", path: "/my-profile" },
+      { name: "Notifications", path: "/mentor-notification" },
     ],
     mentor: [
-      { name: "Home", path: "/" },
-      { name: "Assistant", path: "/chat-assistant" },
       { name: "Add Course", path: "/addcourse" },
-      { name: "My profile", path: "/my-profile" },
-      { name: "Notification", path: "/mentor-notification" }
+      { name: "My Profile", path: "/my-profile" },
+      { name: "Notifications", path: "/mentor-notification" },
     ],
     admin: [
-      { name: "Home", path: "/" },
       { name: "Dashboard", path: "/admin-panel" },
       { name: "User Management", path: "/user-management" },
-      { name: "Courses", path: "/courses" },
-      { name: "Mentorship", path: "/mentor-match" },
-      { name: "Toolkits", path: "/toolkit" },
-      { name: "Assistant", path: "/chat-assistant" },
-      { name: "Entrepreneur Tools", path: "/entrepreneur-toolkit" },
       { name: "Add Course", path: "/addcourse" },
-      { name: "My profile", path: "/my-profile" }
+      { name: "My Profile", path: "/my-profile" },
     ],
-  };
-
-  const currentLinks = navLinks[user?.role || "guest"];
-
+  }[user?.role || "guest"];
 
   return (
     <nav className="w-full sticky top-0 z-50 bg-white shadow-md border-b border-gray-200">
@@ -89,11 +76,27 @@ export default function Navbar() {
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-6">
+          <Link to="/" className="text-gray-700 hover:text-purple-600 font-medium text-sm">Home</Link>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center gap-1 text-gray-700 hover:text-purple-600 font-medium text-sm">
+              Explore
+              <ChevronDown className="w-4 h-4 mt-0.5" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem asChild><Link to="/courses">Courses</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/mentor-match">Mentorship</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/toolkit">Toolkits</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/chat-assistant">Assistant</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/entrepreneur-toolkit">Entrepreneur Tools</Link></DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           {currentLinks.map((link) => (
             <Link
               key={link.name}
               to={link.path}
-              className="text-gray-700 hover:text-purple-600 transition font-medium text-sm tracking-wide"
+              className="text-gray-700 hover:text-purple-600 font-medium text-sm"
             >
               {link.name}
             </Link>
@@ -104,32 +107,21 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-4">
           {!user ? (
             <>
-              <Button variant="outline" onClick={() => navigate("/register")}>
-                Register
-              </Button>
+              <Button variant="outline" onClick={() => navigate("/register")}>Register</Button>
               <Button onClick={() => navigate("/login")}>Login</Button>
             </>
           ) : (
             <>
-              {/* 👇 Show user info */}
               <div className="text-sm text-gray-600 mr-2">
                 {user.displayName || user.email}
               </div>
-              <Button
-                variant="outline"
-                onClick={() => navigate("/dashboard")}
-              >
-                Dashboard
-              </Button>
-              <Button onClick={handleLogout} className="bg-red-500 hover:bg-red-600">
-                Logout
-              </Button>
+              <Button variant="outline" onClick={() => navigate("/dashboard")}>Dashboard</Button>
+              <Button onClick={handleLogout} className="bg-red-500 hover:bg-red-600">Logout</Button>
             </>
           )}
         </div>
 
-
-        {/* Mobile Hamburger */}
+        {/* Mobile Menu */}
         <div className="md:hidden">
           <Sheet>
             <SheetTrigger>
@@ -137,42 +129,33 @@ export default function Navbar() {
             </SheetTrigger>
             <SheetContent className="bg-white">
               <div className="flex flex-col gap-4 mt-6">
+                <Link to="/" className="text-gray-800 hover:text-purple-600 font-medium">Home</Link>
+                <hr className="border-gray-300" />
+                <p className="text-sm font-semibold text-gray-500">Explore</p>
+                <Link to="/courses" className="text-gray-800 hover:text-purple-600">Courses</Link>
+                <Link to="/mentor-match" className="text-gray-800 hover:text-purple-600">Mentorship</Link>
+                <Link to="/toolkit" className="text-gray-800 hover:text-purple-600">Toolkits</Link>
+                <Link to="/chat-assistant" className="text-gray-800 hover:text-purple-600">Assistant</Link>
+                <Link to="/entrepreneur-toolkit" className="text-gray-800 hover:text-purple-600">Entrepreneur Tools</Link>
                 {currentLinks.map((link) => (
                   <Link
                     key={link.name}
                     to={link.path}
-                    className="text-gray-800 hover:text-purple-600 transition font-medium"
+                    className="text-gray-800 hover:text-purple-600"
                   >
                     {link.name}
                   </Link>
                 ))}
-                <hr className="border-t border-gray-300 my-3" />
+                <hr className="border-gray-300" />
                 {!user ? (
                   <>
-                    <Button
-                      variant="outline"
-                      onClick={() => navigate("/login")}
-                    >
-                      Login
-                    </Button>
-                    <Button onClick={() => navigate("/register")}>
-                      Register
-                    </Button>
+                    <Button variant="outline" onClick={() => navigate("/login")}>Login</Button>
+                    <Button onClick={() => navigate("/register")}>Register</Button>
                   </>
                 ) : (
                   <>
-                    <Button
-                      variant="outline"
-                      onClick={() => navigate("/dashboard")}
-                    >
-                      Dashboard
-                    </Button>
-                    <Button
-                      onClick={handleLogout}
-                      className="bg-red-500 hover:bg-red-600"
-                    >
-                      Logout
-                    </Button>
+                    <Button variant="outline" onClick={() => navigate("/dashboard")}>Dashboard</Button>
+                    <Button onClick={handleLogout} className="bg-red-500 hover:bg-red-600">Logout</Button>
                   </>
                 )}
               </div>
