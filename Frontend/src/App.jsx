@@ -12,7 +12,9 @@ import ChatAssistant from "./pages/ChatAssistant";
 import EntrepreneurToolkit from "./pages/EntrepreneurToolkit";
 
 import About from "./pages/About";
+import PrivacyTerms from "./pages/PrivacyTerms";
 import Navbar from "./components/Navbar";
+import DownloadFile from "./pages/testCloudinary";
 
 // Admin imports
 import AdminPanel from "./pages/AdminPanel";
@@ -24,7 +26,7 @@ import AddToolkit from "./pages/AddToolkit";
 
 
 //Mentor imports
-import MentorNotification from "./pages/Notification";
+import MentorNotification from "./pages/MentorNotification";
 
 function App() {
   return (
@@ -35,7 +37,8 @@ function App() {
         <Route path="/courses" element={<Courses />} />
         <Route path="/courses/:courseId" element={<CoursePlayer />} />
         <Route path="/mentor-match" element={<MentorMatch />} />
-        <Route path="/toolkit" element={<Toolkit />} />
+        <Route path="/testCloud" element={<DownloadFile />} />
+        
 
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
@@ -43,8 +46,10 @@ function App() {
         <Route path="/chat-assistant" element={<ChatAssistant />} />
         <Route path="/entrepreneur-toolkit" element={<EntrepreneurToolkit />} />
         <Route path="/about" element={<About />} />
+        <Route path="/privacy-terms" element={<PrivacyTerms />} />
         <Route path="/my-profile" element={<MyProfile />} />
         <Route path="/addtoolkit" element={<AddToolkit />} />
+        <Route path="/toolkit" element={<Toolkit />} />
         
 
         {/* Admin Routes */}
@@ -52,7 +57,10 @@ function App() {
         <Route path="/user-management" element={<UserManagement />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/addcourse" element={<AddCourse />} />
+        <Route path="/add-toolkit" element={<AddToolkit />} />
         
+        {/* Notifications */}
+        <Route path="/mentor-notification" element={<MentorNotification />} />
       </Routes>
     </Router>
   );

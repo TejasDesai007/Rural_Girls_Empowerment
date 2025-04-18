@@ -5,7 +5,7 @@ import AvailableMentorsList from "@/components/AvailableMentorsList";
 import ScheduleSection from "@/components/ScheduleSection";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { db } from "../firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { addDoc, collection, getDocs } from "firebase/firestore";
 const MentorMatch = () => {
   const [selectedMentor, setSelectedMentor] = useState(null);
   const [menteeId, setMenteeId] = useState(null);
@@ -48,9 +48,40 @@ const MentorMatch = () => {
     }
   }, [location.state, mentors]);
 
-  const handleBookingComplete = () => {
-    setSelectedMentor(null);
-    alert("Booking request sent!");
+  const handleBookingComplete = async (bookingData) => {
+    try {
+      // Get mentee details
+      const auth = getAuth();
+      const mentee = auth.currentUser;
+      const menteeName = mentee?.displayName || "A mentee";
+      
+      // Format the date for better readability
+      const bookingDate = bookingData?.date || new Date().toLocaleDateString("en-CA");
+      const timeSlot = bookingData?.timeSlot || "unspecified time";
+      
+      // Create notification with detailed information
+      await addDoc(collection(db, "notifications"), {
+        title: "🔔 New Mentor Request",
+        description: `${menteeName} has requested a mentoring session on ${bookingDate} at ${timeSlot}.`,
+        type: "mentee",
+        read: false,
+        createdAt: new Date(),
+        mentorId: selectedMentor.id,
+        menteeId: menteeId,
+        sessionDetails: {
+          date: bookingDate,
+          timeSlot: timeSlot,
+          status: "pending",
+          mentorName: selectedMentor.name
+        }
+      });
+  
+      // UI is already reset by the original function
+      // no need for additional alert since toast is already shown
+    } catch (error) {
+      console.error("Error creating notification:", error);
+      toast.error("Failed to send notification to mentor");
+    }
   };
 
   return (

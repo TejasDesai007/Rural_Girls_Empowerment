@@ -190,6 +190,18 @@ export default function Profile() {
     );
   }
 
+  // Function to get appropriate role badge color
+  const getRoleBadgeColor = (role) => {
+    switch (role) {
+      case 'admin':
+        return 'bg-red-100 text-red-800';
+      case 'mentor':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <div className="flex flex-col md:flex-row gap-8">
@@ -205,6 +217,15 @@ export default function Profile() {
               </Avatar>
               <CardTitle className="text-center">{userData?.name || user.displayName || "User"}</CardTitle>
               <CardDescription className="text-center">{user.email}</CardDescription>
+              
+              {/* Role Badge - Added this section */}
+              {userData?.role && (
+                <div className="mt-2">
+                  <span className={`text-xs px-3 py-1 rounded-full capitalize font-medium ${getRoleBadgeColor(userData.role)}`}>
+                    {userData.role}
+                  </span>
+                </div>
+              )}
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-600 mb-4">
