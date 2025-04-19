@@ -2,12 +2,18 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { sendToGemini } from "../services/aiService";
-import { LoaderCircle, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
+import { LoaderCircle, Mic, MicOff, Volume2, VolumeX, Globe } from "lucide-react";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
 const LANGUAGE_CONFIG = {
+  'en-IN': { 
+    name: 'English',
+    responseLang: 'en',
+    errorMessage: 'Please try again or clarify your query.',
+    fallbackResponse: 'Sorry, I don\'t have this information available.'
+  },
   'hi-IN': { 
     name: 'Hindi',
     responseLang: 'hi',
@@ -25,12 +31,6 @@ const LANGUAGE_CONFIG = {
     responseLang: 'ta',
     errorMessage: 'தயவு செய்து மீண்டும் முயற்சிக்கவும் அல்லது உங்கள் வினவலை தெளிவுபடுத்தவும்.',
     fallbackResponse: 'மன்னிக்கவும், இந்த தகவல் என்னிடம் இல்லை.'
-  },
-  'en-IN': { 
-    name: 'English',
-    responseLang: 'en',
-    errorMessage: 'Please try again or clarify your query.',
-    fallbackResponse: 'Sorry, I don\'t have this information available.'
   }
 };
 
@@ -39,7 +39,7 @@ const ChatAssistant = () => {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [listening, setListening] = useState(false);
-  const [selectedLang, setSelectedLang] = useState('hi-IN');
+  const [selectedLang, setSelectedLang] = useState('en-IN'); // Changed default to English
   const [voiceResponse, setVoiceResponse] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
   const recognitionRef = useRef(null);
@@ -245,49 +245,87 @@ Query: ${newPrompt}`;
     }
   };
 
+  // Update quick prompts based on selected language
+  const getQuickPrompts = () => {
+    if (selectedLang === 'en-IN') {
+      return [
+        "What is Sukanya Samriddhi Yojana?",
+        "Scholarships for women",
+        "What is blockchain?",
+        "Ayushman Bharat scheme",
+        "New Education Policy"
+      ];
+    } else {
+      return [
+        "सुकन्या समृद्धि योजना",
+        "महिलाओं के लिए छात्रवृत्ति",
+        "ब्लॉकचेन क्या है?",
+        "आयुष्मान भारत योजना",
+        "नई शिक्षा नीति"
+      ];
+    }
+  };
+
+  const getWelcomeMessage = () => {
+    if (selectedLang === 'en-IN') {
+      return "Start a conversation by typing, speaking, or selecting a quick prompt";
+    } else if (selectedLang === 'hi-IN') {
+      return "टाइप करके, बोलकर या क्विक प्रॉम्प्ट चुनकर बातचीत शुरू करें";
+    } else if (selectedLang === 'mr-IN') {
+      return "टाईप करून, बोलून किंवा क्विक प्रॉम्प्ट निवडून संभाषण सुरू करा";
+    } else if (selectedLang === 'ta-IN') {
+      return "தட்டச்சு செய்வதன் மூலம், பேசுவதன் மூலம் அல்லது விரைவு தூண்டுதலைத் தேர்ந்தெடுப்பதன் மூலம் உரையாடலைத் தொடங்கவும்";
+    }
+    return "Start a conversation";
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-white p-4 md:p-8">
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <h2 className="text-2xl md:text-3xl font-bold text-gray-800">
-          🎙️ भारतीय बहुभाषिक सहायक
+          🎙️ {selectedLang === 'en-IN' ? 'Indian Multilingual Assistant' : 'भारतीय बहुभाषिक सहायक'}
         </h2>
         
         <div className="flex gap-3 items-center">
-          <select 
-            value={selectedLang}
-            onChange={(e) => setSelectedLang(e.target.value)}
-            className="p-2 rounded-md border bg-white"
-          >
-            {Object.entries(LANGUAGE_CONFIG).map(([code, { name }]) => (
-              <option key={code} value={code}>{name}</option>
-            ))}
-          </select>
+          <div className="flex items-center bg-white rounded-md border p-1">
+            <Globe size={16} className="text-gray-500 ml-1" />
+            <select 
+              value={selectedLang}
+              onChange={(e) => setSelectedLang(e.target.value)}
+              className="p-1 bg-transparent focus:outline-none"
+              aria-label="Select language"
+            >
+              {Object.entries(LANGUAGE_CONFIG).map(([code, { name }]) => (
+                <option key={code} value={code}>{name}</option>
+              ))}
+            </select>
+          </div>
 
-          <Button 
-            onClick={() => setVoiceResponse(!voiceResponse)}
-            variant={voiceResponse ? "default" : "outline"}
-            size="sm"
-            aria-label={voiceResponse ? "Mute voice responses" : "Unmute voice responses"}
-          >
-            {voiceResponse ? <Volume2 size={18} /> : <VolumeX size={18} />}
-          </Button>
+          <div className="relative inline-block">
+            <Button 
+              onClick={() => setVoiceResponse(!voiceResponse)}
+              variant={voiceResponse ? "default" : "outline"}
+              size="sm"
+              aria-label={voiceResponse ? "Voice output on" : "Voice output off"}
+            >
+              {voiceResponse ? <Volume2 size={18} /> : <VolumeX size={18} />}
+              <div className="absolute -bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded hidden group-hover:block whitespace-nowrap z-10">
+                {voiceResponse ? "Voice output on" : "Voice output off"}
+              </div>
+            </Button>
+          </div>
         </div>
       </div>
 
       <div className="flex flex-wrap justify-center gap-3 mb-6">
-        {[
-          "सुकन्या समृद्धि योजना",
-          "महिलाओं के लिए छात्रवृत्ति",
-          "ब्लॉकचेन क्या है?",
-          "आयुष्मान भारत योजना",
-          "नई शिक्षा नीति"
-        ].map((prompt, idx) => (
+        {getQuickPrompts().map((prompt, idx) => (
           <Button
             key={idx}
             variant="outline"
             size="sm"
             onClick={() => handleQuickPrompt(prompt)}
             disabled={loading}
+            className="hover:bg-blue-50 transition-colors"
           >
             {prompt}
           </Button>
@@ -296,9 +334,13 @@ Query: ${newPrompt}`;
 
       <div className="flex-1 bg-white rounded-xl shadow-inner p-4 overflow-y-auto border border-gray-200 mb-4 min-h-[40vh] flex flex-col">
         {messages.length === 0 && !loading ? (
-          <p className="text-gray-400 text-center my-auto">
-            टाइप करके, बोलकर या क्विक प्रॉम्प्ट चुनकर बातचीत शुरू करें
-          </p>
+          <div className="text-gray-400 text-center my-auto flex flex-col items-center gap-3">
+            <p>{getWelcomeMessage()}</p>
+            <div className="flex gap-2 text-sm bg-blue-50 p-2 rounded-md text-blue-700">
+              <Globe size={16} />
+              <p>You can change the language using the selector above</p>
+            </div>
+          </div>
         ) : (
           messages.map((msg, idx) => (
             <div
@@ -329,7 +371,7 @@ Query: ${newPrompt}`;
         {loading && (
           <div className="flex justify-start items-center mt-2 text-gray-500">
             <LoaderCircle className="animate-spin w-4 h-4 mr-2" />
-            <span>प्रसंस्करण...</span>
+            <span>{selectedLang === 'en-IN' ? 'Processing...' : 'प्रसंस्करण...'}</span>
           </div>
         )}
         <div ref={messagesEndRef} />
@@ -340,7 +382,7 @@ Query: ${newPrompt}`;
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyPress}
-          placeholder="कुछ भी पूछें..."
+          placeholder={selectedLang === 'en-IN' ? "Ask anything..." : "कुछ भी पूछें..."}
           className="w-full min-h-[3rem] md:min-h-[2.5rem] resize-none"
           rows={1}
           disabled={loading}
@@ -352,18 +394,26 @@ Query: ${newPrompt}`;
             disabled={loading || !input.trim()}
             className="flex-grow sm:flex-grow-0"
           >
-            {loading ? <LoaderCircle className="animate-spin w-4 h-4" /> : "भेजें"}
+            {loading ? 
+              <LoaderCircle className="animate-spin w-4 h-4" /> : 
+              selectedLang === 'en-IN' ? "Send" : "भेजें"
+            }
           </Button>
 
-          <Button 
-            variant="outline" 
-            onClick={startListening} 
-            disabled={loading}
-            className="aspect-square p-2"
-            aria-label={listening ? "Stop listening" : "Start listening"}
-          >
-            {listening ? <MicOff size={18} /> : <Mic size={18} />}
-          </Button>
+          <div className="relative inline-block">
+            <Button 
+              variant="outline" 
+              onClick={startListening} 
+              disabled={loading}
+              className="aspect-square p-2"
+              aria-label={listening ? "Stop listening" : "Start listening"}
+            >
+              {listening ? <MicOff size={18} /> : <Mic size={18} />}
+            </Button>
+            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 pointer-events-none">
+              {listening ? "Stop voice input" : "Start voice input"}
+            </div>
+          </div>
 
           <Button
             variant="ghost"
@@ -371,7 +421,7 @@ Query: ${newPrompt}`;
             disabled={loading}
             className="flex-grow sm:flex-grow-0"
           >
-            साफ करें
+            {selectedLang === 'en-IN' ? "Clear" : "साफ करें"}
           </Button>
         </div>
       </div>

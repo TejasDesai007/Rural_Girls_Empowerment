@@ -25,7 +25,7 @@ export default function Navbar() {
         try {
           // Fetch user role from database based on email
           const userRole = await fetchUserRole(firebaseUser.email);
-
+          
           const userData = {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
@@ -33,7 +33,7 @@ export default function Navbar() {
             photoURL: firebaseUser.photoURL,
             role: userRole,
           };
-
+          
           setUser(userData);
           setVariant(userRole);
         } catch (error) {
@@ -53,7 +53,7 @@ export default function Navbar() {
     // Handle page reload - get data from session storage first
     const storedUserJSON = sessionStorage.getItem("user");
     const storedRole = sessionStorage.getItem("role");
-
+    
     if (storedUserJSON && storedRole) {
       try {
         const storedUser = JSON.parse(storedUserJSON);
@@ -77,31 +77,31 @@ export default function Navbar() {
       const usersRef = collection(db, "users");
       const q = query(usersRef, where("email", "==", email));
       const querySnapshot = await getDocs(q);
-
+      
       if (!querySnapshot.empty) {
         // User found in users collection
         const userData = querySnapshot.docs[0].data();
         return userData.role || "user"; // Default to "user" if role is not specified
       }
-
+      
       // If not found in users collection, check admin collection
       const adminsRef = collection(db, "admins");
       const adminQuery = query(adminsRef, where("email", "==", email));
       const adminSnapshot = await getDocs(adminQuery);
-
+      
       if (!adminSnapshot.empty) {
         return "admin";
       }
-
+      
       // If not found in admins, check mentors collection
       const mentorsRef = collection(db, "mentors");
       const mentorQuery = query(mentorsRef, where("email", "==", email));
       const mentorSnapshot = await getDocs(mentorQuery);
-
+      
       if (!mentorSnapshot.empty) {
         return "mentor";
       }
-
+      
       // If no role is found in any collection, default to "user"
       return "user";
     } catch (error) {
@@ -177,7 +177,7 @@ export default function Navbar() {
     try {
       // Sign out from Firebase
       await signOut(auth);
-
+      
       // Navigate to home page
       navigate("/");
     } catch (error) {
@@ -188,15 +188,13 @@ export default function Navbar() {
   const currentLinks = {
     guest: [],
     user: [
-      { name: "Dashboard", path: "/user-dashboard" },
       { name: "My Profile", path: "/my-profile" },
-      { name: "Notifications", path: "/user-notification" },
+      { name: "Notifications", path: "/notification" },
     ],
     mentor: [
-      { name: "Dashboard", path: "/mentor-dashboard" },
       { name: "Add Course", path: "/addcourse" },
       { name: "My Profile", path: "/my-profile" },
-      { name: "notification", path: "/mentor-notification" },
+      { name: "Notifications", path: "/notification" },
       { name: "Add ToolKits", path: "/addtoolkit" },
     ],
     admin: [
@@ -275,7 +273,7 @@ export default function Navbar() {
                 </div>
               </div>
 
-              {/* Notification - Desktop version with dropdown */}
+              {/* Notification */}
               <div className="relative" ref={notificationRef}>
                 <button onClick={handleNotificationToggle} className="relative p-1">
                   <Bell className="h-6 w-6 text-gray-700 hover:text-purple-600" />
@@ -300,119 +298,32 @@ export default function Navbar() {
               </Button>
             </SheetTrigger>
 
-            <SheetContent side="left" className="w-[280px] sm:w-[320px] p-0">
-              <div className="flex flex-col h-full">
-                {/* Header */}
-                <div className="p-4 border-b">
-                  <div className="flex items-center space-x-2">
-                    <img src={logo} alt="Logo" className="h-8 w-8 rounded-full" />
-                    <span className="text-xl font-bold tracking-wide text-purple-700">
-                      EmpowerHer
-                    </span>
-                  </div>
+            <SheetContent side="left" className="w-[250px] sm:w-[300px]">
+              <div className="flex flex-col gap-4 py-6">
+                <Link to="/" className="text-lg font-semibold text-purple-700 hover:text-purple-900">
+                  EmpowerHer
+                </Link>
 
-                  {user && (
-                    <div className="mt-4 flex items-center gap-2">
-                      <div className="bg-purple-100 rounded-full h-8 w-8 flex items-center justify-center">
-                        <span className="text-purple-700 font-medium">
-                          {user?.displayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "U"}
-                        </span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium">{user?.displayName || user?.email}</span>
-                        <span className="text-xs text-gray-500 capitalize">{variant}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Navigation Links */}
-                <div className="py-4 px-3 flex-1 overflow-y-auto">
-                  <div className="space-y-6">
-                    {roleLinks.map(link => {
-                      if (link.type === "simple") {
-                        // Check if this link matches the current path
-                        const isActive = window.location.pathname === link.path;
-                        return (
-                          <Link
-                            key={link.name}
-                            to={link.path}
-                            className={`flex items-center py-2 px-3 rounded-md transition-colors ${isActive
-                                ? "bg-purple-100 text-purple-700 font-medium"
-                                : "text-gray-700 hover:bg-purple-50 hover:text-purple-700"
-                              }`}
-                          >
-                            {link.name}
-                            {isActive && (
-                              <div className="ml-auto w-1.5 h-5 bg-purple-500 rounded-full"></div>
-                            )}
-                          </Link>
-                        );
-                      } else if (link.type === "dropdown") {
-                        return (
-                          <div key={link.name} className="space-y-1">
-                            <div className="px-3 text-sm font-medium text-gray-900">
-                              {link.name}
-                            </div>
-                            <div className="mt-1 pl-3 border-l-2 border-gray-200">
-                              {link.items.map((item) => {
-                                // Check if this dropdown item matches the current path
-                                const isActive = window.location.pathname === item.path;
-                                return (
-                                  <Link
-                                    key={item.name}
-                                    to={item.path}
-                                    className={`flex items-center py-2 px-3 text-sm transition-colors ${isActive
-                                        ? "text-purple-700 font-medium"
-                                        : "text-gray-600 hover:text-purple-700"
-                                      }`}
-                                  >
-                                    {item.name}
-                                    {isActive && (
-                                      <div className="ml-auto w-1.5 h-4 bg-purple-500 rounded-full"></div>
-                                    )}
-                                  </Link>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      }
-                      return null;
-                    })}
+                {user && (
+                  <div className="text-sm text-gray-500 font-medium">
+                    Role: {variant}
                   </div>
                 )}
 
                
 
-                {/* Footer Actions */}
-                <div className="border-t p-4 bg-gray-50">
+                <div className="border-t pt-4 mt-4 flex flex-col gap-3">
                   {variant === "guest" ? (
-                    <div className="grid grid-cols-2 gap-3">
-                      <Button variant="outline" onClick={() => navigate("/register")} className="w-full">Register</Button>
-                      <Button onClick={() => navigate("/login")} className="w-full">Login</Button>
-                    </div>
+                    <>
+                      <Button variant="outline" onClick={() => navigate("/register")}>Register</Button>
+                      <Button onClick={() => navigate("/login")}>Login</Button>
+                    </>
                   ) : (
-                    <div className="space-y-3">
-                      {/* Mobile notification button - Direct navigation */}
-                      <Button
-                        onClick={navigateToNotifications}
-                        className={`w-full flex items-center justify-center gap-2 ${
-                          window.location.pathname.includes("notification") 
-                            ? "bg-purple-100 border-purple-300" 
-                            : "bg-purple-600 hover:bg-purple-700 text-white"
-                        }`}
-                      >
-                        <Bell className="h-4 w-4" />
-                        Notifications
-                        {unreadNotifications.length > 0 && (
-                          <span className="bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                            {unreadNotifications.length}
-                          </span>
-                        )}
-                      </Button>
-                      <Button onClick={handleLogout} variant="destructive" className="w-full">Logout</Button>
-                    </div>
+                    <>
+                      <Button onClick={() => navigate("/my-profile")}>Profile</Button>
+                      <Button onClick={() => navigateToNotifications}>Notifications</Button>
+                      <Button onClick={handleLogout} variant="destructive">Logout</Button>
+                    </>
                   )}
                 </div>
               </div>

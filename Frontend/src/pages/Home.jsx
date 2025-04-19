@@ -1,41 +1,62 @@
 // src/pages/Home.jsx
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { cn } from '../lib/utils';
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Slider from "react-slick";
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
-
-import { BentoGrid, BentoGridItem } from "../components/ui/bento-grid";
-import {
-  Route, Bike, Cpu, Rocket, Touchpad, Map, UserCheck, Code2, Sparkles, MousePointerClick, BarChart3, Headset
-} from "lucide-react";
-import { AnimatedTestimonials } from "../components/ui/animated-testimonials";
-
 import { motion } from "framer-motion";
+import {
+  Map, UserCheck, Code2, Sparkles, MousePointerClick
+} from "lucide-react";
+
+// Lazy-loaded components
+const BentoGrid = lazy(() => import("../components/ui/bento-grid").then(module => ({
+  default: module.BentoGrid
+})));
+const BentoGridItem = lazy(() => import("../components/ui/bento-grid").then(module => ({
+  default: module.BentoGridItem
+})));
+const AnimatedTestimonials = lazy(() => import("../components/ui/animated-testimonials").then(module => ({
+  default: module.AnimatedTestimonials
+})));
+
+// Loading placeholders
+const LoadingBento = () => (
+  <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4">
+    {[...Array(6)].map((_, i) => (
+      <div key={i} className={`${i === 3 || i === 6 ? "md:col-span-2" : ""} bg-gray-100 animate-pulse rounded-xl h-64`}></div>
+    ))}
+  </div>
+);
+
+const LoadingTestimonials = () => (
+  <div className="w-full max-w-5xl mx-auto h-96 bg-gray-100 animate-pulse rounded-xl"></div>
+);
 
 const Home = () => {
   return (
     <div className="min-h-screen bg-white text-gray-900">
       <HeroSection />
-      <FeaturesSection />
-      <TestimonialsSection />
+      <Suspense fallback={<LoadingBento />}>
+        <FeaturesSection />
+      </Suspense>
+      <Suspense fallback={<LoadingTestimonials />}>
+        <TestimonialsSection />
+      </Suspense>
       <CallToActionSection />
     </div>
   );
 };
 
-const HeroSection = () => (
-  <section className="w-full px-6 py-20 text-center bg-gradient-to-br from-pink-100 to-pink-200">
-    <div className="relative mx-auto max-w-7xl flex flex-col items-center justify-center">
-
-      <div className="px-4 py-10 md:py-20">
-        <h1 className="relative z-10 mx-auto max-w-4xl text-center text-2xl font-bold text-slate-700 md:text-4xl lg:text-7xl dark:text-slate-300">
-          {"Empower Rural Girls Through Digital Learning"
-            .split(" ")
-            .map((word, index) => (
+const HeroSection = () => {
+  // Extract words outside of render for better performance
+  const titleWords = "Empower Rural Girls Through Digital Learning".split(" ");
+  
+  return (
+    <section className="w-full px-6 py-20 text-center bg-gradient-to-br from-pink-100 to-pink-200">
+      <div className="relative mx-auto max-w-7xl flex flex-col items-center justify-center">
+        <div className="px-4 py-10 md:py-20">
+          <h1 className="relative z-10 mx-auto max-w-4xl text-center text-2xl font-bold text-slate-700 md:text-4xl lg:text-7xl dark:text-slate-300">
+            {titleWords.map((word, index) => (
               <motion.span
                 key={index}
                 initial={{ opacity: 0, filter: "blur(4px)", y: 10 }}
@@ -50,64 +71,65 @@ const HeroSection = () => (
                 {word}
               </motion.span>
             ))}
-        </h1>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3, delay: 0.8 }}
-          className="relative z-10 mx-auto max-w-xl py-4 text-center text-lg font-normal text-neutral-600 dark:text-neutral-400"
-        >
-          Unlock opportunities with mentorship, courses, toolkits, and an AI assistant—all in your language.
-        </motion.p>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3, delay: 1 }}
-          className="relative z-10 mt-8 flex flex-wrap items-center justify-center gap-4"
-        >
-          <Link to="/register">
-            <button className="w-60 transform rounded-lg bg-pink-600 px-6 py-2 font-medium text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-pink-700 dark:bg-white dark:text-black dark:hover:bg-gray-200">
-              Register
-            </button>
-          </Link>
-          <Link to="/about">
-            <button className="w-60 transform rounded-lg border border-gray-300 bg-white px-6 py-2 font-medium text-black transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-100 dark:border-gray-700 dark:bg-black dark:text-white dark:hover:bg-gray-900">
-              Learn More
-            </button>
-          </Link>
-        </motion.div>
+          </h1>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3, delay: 0.8 }}
+            className="relative z-10 mx-auto max-w-xl py-4 text-center text-lg font-normal text-neutral-600 dark:text-neutral-400"
+          >
+            Unlock opportunities with mentorship, courses, toolkits, and an AI assistant—all in your language.
+          </motion.p>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3, delay: 1 }}
+            className="relative z-10 mt-8 flex flex-wrap items-center justify-center gap-4"
+          >
+            <Link to="/register">
+              <button className="w-60 transform rounded-lg bg-pink-600 px-6 py-2 font-medium text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-pink-700 dark:bg-white dark:text-black dark:hover:bg-gray-200">
+                Register
+              </button>
+            </Link>
+            <Link to="/about">
+              <button className="w-60 transform rounded-lg border border-gray-300 bg-white px-6 py-2 font-medium text-black transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-100 dark:border-gray-700 dark:bg-black dark:text-white dark:hover:bg-gray-900">
+                Learn More
+              </button>
+            </Link>
+          </motion.div>
+        </div>
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 const FeaturesSection = () => {
+  // Extract words outside of render
+  const titleWords = "What do we offer?".split(" ");
+  
   return (
     <section className="px-6 py-16 bg-white">
       <h1 className="relative z-10 mx-auto mb-5 max-w-4xl text-center text-xl font-bold text-slate-700 md:text-4xl lg:text-7xl dark:text-slate-300">
-        {"What do we offer?"
-          .split(" ")
-          .map((word, index) => (
-            <motion.span
-              key={index}
-              initial={{ opacity: 0, filter: "blur(4px)", y: 10 }}
-              whileInView={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-              transition={{
-                duration: 0.3,
-                delay: index * 0.1,
-                ease: "easeInOut",
-              }}
-              viewport={{ once: true, amount: 0.6 }}
-              className="mr-4 inline-block"
-            >
-              {word}{" "}
-            </motion.span>
-          ))}
+        {titleWords.map((word, index) => (
+          <motion.span
+            key={index}
+            initial={{ opacity: 0, filter: "blur(4px)", y: 10 }}
+            whileInView={{ opacity: 1, filter: "blur(0px)", y: 0 }}
+            transition={{
+              duration: 0.3,
+              delay: index * 0.1,
+              ease: "easeInOut",
+            }}
+            viewport={{ once: true, amount: 0.6 }}
+            className="mr-4 inline-block"
+          >
+            {word}{" "}
+          </motion.span>
+        ))}
       </h1>
 
       <BentoGrid className="max-w-4xl mx-auto">
         {items.map((item, i) => (
-          // Instead of using Link component directly, use a regular a tag
           <a href={item.link} key={i} className="contents">
             <BentoGridItem
               title={item.title}
@@ -122,7 +144,6 @@ const FeaturesSection = () => {
     </section>
   );
 };
-
 
 const TestimonialsSection = () => (
   <div className='mb-0'>
@@ -149,13 +170,14 @@ const CallToActionSection = () => {
   );
 };
 
-
 export default Home;
 
 // ---------------------BENTO------------------------
 const Skeleton = () => (
   <div className="flex flex-1 w-full h-full min-h-[6rem] rounded-xl bg-gradient-to-br from-neutral-200 dark:from-neutral-900 dark:to-neutral-800 to-neutral-100"></div>
 );
+
+// Pre-defined items array with optimized image loading
 const items = [
   {
     title: "E-learning",
@@ -163,7 +185,6 @@ const items = [
     link: "/courses",
     header: (
       <div className="relative flex flex-1 w-full h-full min-h-[6rem] rounded-xl overflow-hidden items-center justify-center bg-white dark:bg-black">
-        {/* Grid Background */}
         <div
           className={cn(
             "absolute inset-0",
@@ -172,7 +193,6 @@ const items = [
             "dark:[background-image:linear-gradient(to_right,#262626_1px,transparent_1px),linear-gradient(to_bottom,#262626_1px,transparent_1px)]"
           )}
         />
-        {/* Gradient */}
         <div
           className="absolute inset-0 bg-gradient-to-br from-green-400 to-green-600 opacity-80 pointer-events-none"
           style={{
@@ -301,54 +321,52 @@ const items = [
   },
 ];
 
-// **********------------------------------------------- Animated Testimonials -------------------------------------------**********
-export function AnimatedTestimonialsDemo() {
+// Testimonials Demo with optimized image loading
+function AnimatedTestimonialsDemo() {
   const testimonials = [
     {
       quote:
         "This platform changed my life! I learned tailoring and started my own small business.",
       name: "Lakshmi",
       designation: "Uttar Pradesh",
-      src: "https://images.unsplash.com/photo-1441307811206-a12c74889338?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", // Image of rural woman
+      src: "https://images.unsplash.com/photo-1441307811206-a12c74889338?q=80&w=600&auto=format&fit=crop",
     },
     {
       quote:
         "Mentorship helped me choose the right career path. Grateful for this community!",
       name: "Savita",
       designation: "Rajasthan",
-      src: "https://images.unsplash.com/photo-1699873728107-9ce97c8f78eb?q=80&w=2067&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", // Image of rural woman
+      src: "https://images.unsplash.com/photo-1699873728107-9ce97c8f78eb?q=80&w=600&auto=format&fit=crop",
     },
     {
       quote:
         "I never thought online learning could be this accessible. The toolkit resources are super useful.",
       name: "Kalyani",
       designation: "Bihar",
-      src: "https://images.unsplash.com/photo-1518131296958-df44106fd0ae?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", // Image of rural woman
+      src: "https://images.unsplash.com/photo-1518131296958-df44106fd0ae?q=80&w=600&auto=format&fit=crop",
     },
     {
       quote:
         "The AI assistant feature is amazing! I got answers to my doubts instantly, without waiting.",
       name: "Jayshree",
       designation: "Maharashtra",
-      src: "https://images.unsplash.com/photo-1604998268070-8d9b57c181ec?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", // Image of rural woman
+      src: "https://images.unsplash.com/photo-1604998268070-8d9b57c181ec?q=80&w=600&auto=format&fit=crop",
     },
     {
       quote:
         "Connecting with mentors helped me improve my confidence and communication. Highly recommended!",
       name: "Madhavi",
       designation: "Karnataka",
-      src: "https://images.unsplash.com/photo-1668258848213-c1967ba6fb01?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", // Image of rural woman
+      src: "https://images.unsplash.com/photo-1668258848213-c1967ba6fb01?q=80&w=600&auto=format&fit=crop",
     },
     {
       quote:
         "As a working mother, flexible learning made all the difference. I could study whenever I had time.",
       name: "Chandramukhi",
       designation: "Madhya Pradesh",
-      src: "https://images.unsplash.com/photo-1609252285522-ed0ebdd43551?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", // Image of rural woman
+      src: "https://images.unsplash.com/photo-1609252285522-ed0ebdd43551?q=80&w=600&auto=format&fit=crop",
     },
   ];
-  
-
 
   return <AnimatedTestimonials testimonials={testimonials} />;
 }
