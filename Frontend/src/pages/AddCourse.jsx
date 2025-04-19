@@ -8,9 +8,13 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { getAuth } from "firebase/auth";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { db } from "../firebase";
+import { useRef } from "react";
 
 export default function AddCourse() {
   const navigate = useNavigate();
+  const lessonVideoInputRef = useRef(null);
   const [courseData, setCourseData] = useState({
     title: "",
     description: "",
@@ -18,16 +22,20 @@ export default function AddCourse() {
     difficulty: "",
     tags: [],
     thumbnail: null,
-    videoLink: "",
+    previewVideo: null,
     modules: [],
   });
+
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
 
   const difficultyLevels = ["Beginner", "Intermediate", "Advanced"];
   const availableTags = ["Business", "Technology", "Design", "Marketing", "Development", "Skills"];
   const [moduleInput, setModuleInput] = useState("");
   const [lessonInput, setLessonInput] = useState("");
+  const [lessonDescription, setLessonDescription] = useState("");
   const [selectedModule, setSelectedModule] = useState(null);
-  const [lessonVideoLink, setLessonVideoLink] = useState(""); // New state for lesson video link
+  const [lessonVideo, setLessonVideo] = useState(null);
 
   const handleTagToggle = (tag) => {
     setCourseData(prev => {
@@ -55,6 +63,11 @@ export default function AddCourse() {
     setCourseData((prev) => ({ ...prev, thumbnail: file }));
   };
 
+  const handlePreviewVideoChange = (e) => {
+    const file = e.target.files[0];
+    setCourseData((prev) => ({ ...prev, previewVideo: file }));
+  };
+
   const addModule = () => {
     if (!moduleInput.trim()) {
       toast.warning("Module title cannot be empty");
@@ -76,11 +89,20 @@ export default function AddCourse() {
   };
 
   const addLesson = () => {
-    if (!lessonInput.trim() || selectedModule === null) return;
+    if (!lessonInput.trim() || selectedModule === null) {
+      toast.warning("Lesson title cannot be empty");
+      return;
+    }
+
+    if (!lessonVideo) {
+      toast.warning("Please upload a video for the lesson");
+      return;
+    }
 
     const newLesson = {
       title: lessonInput.trim(),
-      videoLink: lessonVideoLink.trim()
+      description: lessonDescription.trim(),
+      video: lessonVideo
     };
 
     const updatedModules = courseData.modules.map((mod, index) =>
@@ -91,38 +113,51 @@ export default function AddCourse() {
 
     setCourseData((prev) => ({ ...prev, modules: updatedModules }));
     setLessonInput("");
-    setLessonVideoLink("");
+    setLessonDescription("");
+    setLessonVideo(null);
+    if (lessonVideoInputRef.current) {
+      lessonVideoInputRef.current.value = "";
+    }
+    toast.success("Lesson added successfully");
+  };
+
+  const uploadToCloudinary = async (file, resourceType = 'auto') => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', "ruralEmpowerment");
+    formData.append('resource_type', resourceType);
+
+    try {
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/dczpxrdq1/auto/upload`,
+        {
+          method: 'POST',
+          body: formData,
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            setUploadProgress(percentCompleted);
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const data = await response.json();
+      return data.secure_url;
+    } catch (error) {
+      console.error('Error uploading to Cloudinary:', error);
+      throw error;
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const {
-      title,
-      description,
-      category,
-      difficulty,
-      tags,
-      videoLink,
-      thumbnail,
-      modules
-    } = courseData;
-
-    if (!title.trim() || !description.trim() || !category.trim()) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-    
-    
-    
-    if (!thumbnail) {
-      toast.error("Please upload a thumbnail image");
-      return;
-    }
-
-    if (modules.length === 0) {
-      toast.error("Please add at least one module");
-      return;
-    }
+    setIsUploading(true);
+    setUploadProgress(0);
 
     try {
       const auth = getAuth();
@@ -132,47 +167,66 @@ export default function AddCourse() {
         throw new Error("You must be logged in to create a course");
       }
 
-      const token = await user.getIdToken();
+      // Upload thumbnail
+      const thumbnailUrl = await uploadToCloudinary(courseData.thumbnail, 'image');
+      setUploadProgress(20);
 
-      const formData = new FormData();
-      formData.append("title", title);
-      formData.append("description", description);
-      formData.append("category", category);
-      formData.append("difficulty", difficulty);
-      formData.append("tags", JSON.stringify(tags));
-      formData.append("videoLink", videoLink);
-      formData.append("thumbnail", thumbnail);
-      formData.append("modules", JSON.stringify(modules));
+      // Upload preview video
+      const previewVideoUrl = await uploadToCloudinary(courseData.previewVideo, 'video');
+      setUploadProgress(40);
 
-      const res = await fetch("http://localhost:5000/api/courses/addCourse", {
-        method: "POST",
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
-      });
+      // Upload all lesson videos
+      const modulesWithVideoUrls = await Promise.all(
+        courseData.modules.map(async (module) => {
+          const lessonsWithUrls = await Promise.all(
+            module.lessons.map(async (lesson) => {
+              const videoUrl = await uploadToCloudinary(lesson.video, 'video');
+              return {
+                title: lesson.title,
+                description: lesson.description,
+                videoUrl: videoUrl
+              };
+            })
+          );
+          return {
+            title: module.title,
+            lessons: lessonsWithUrls
+          };
+        })
+      );
 
-      const data = await res.json();
+      setUploadProgress(90);
 
-      if (!res.ok) {
-        throw new Error(data.message || "Failed to save course");
-      }
+      // Create course data for Firebase
+      const course = {
+        title: courseData.title,
+        description: courseData.description,
+        category: courseData.category,
+        difficulty: courseData.difficulty,
+        tags: courseData.tags,
+        thumbnailUrl,
+        previewVideoUrl,
+        modules: modulesWithVideoUrls,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        instructorId: user.uid,
+        instructorName: user.displayName || "Anonymous",
+        studentsEnrolled: 0,
+        rating: 0,
+        reviewsCount: 0
+      };
 
-      toast.success("Course added successfully!");
-      setCourseData({
-        title: "",
-        description: "",
-        category: "",
-        difficulty: "",
-        tags: [],
-        thumbnail: null,
-        videoLink: "",
-        modules: [],
-      });
-      navigate("/courses");
-    } catch (err) {
-      console.error("Submission error:", err);
-      toast.error(err.message || "Failed to add course. Please try again.");
+      // Add to Firestore
+      const docRef = await addDoc(collection(db, "courses"), course);
+      setUploadProgress(100);
+
+      toast.success("Course created successfully!");
+      navigate(`/courses/${docRef.id}`);
+    } catch (error) {
+      console.error("Error creating course:", error);
+      toast.error(error.message || "Failed to create course");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -180,7 +234,23 @@ export default function AddCourse() {
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
       <h1 className="text-3xl font-bold text-purple-700">Add New Course</h1>
 
+      {isUploading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-96">
+            <h3 className="text-lg font-medium mb-4">Uploading Course Content</h3>
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div
+                className="bg-purple-600 h-2.5 rounded-full"
+                style={{ width: `${uploadProgress}%` }}
+              ></div>
+            </div>
+            <p className="mt-2 text-sm text-gray-600">{uploadProgress}% complete</p>
+          </div>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit}>
+        {/* Course Details */}
         <Card>
           <CardHeader>
             <CardTitle>Course Details</CardTitle>
@@ -193,6 +263,7 @@ export default function AddCourse() {
                   name="title"
                   value={courseData.title}
                   onChange={handleCourseChange}
+                  required
                 />
               </div>
               <div>
@@ -201,9 +272,11 @@ export default function AddCourse() {
                   name="category"
                   value={courseData.category}
                   onChange={handleCourseChange}
+                  required
                 />
               </div>
             </div>
+
             <div>
               <Label>Difficulty Level</Label>
               <div className="flex gap-4 mt-2">
@@ -219,6 +292,7 @@ export default function AddCourse() {
                 ))}
               </div>
             </div>
+
             <div>
               <Label>Tags</Label>
               <div className="flex flex-wrap gap-2 mt-2">
@@ -252,18 +326,17 @@ export default function AddCourse() {
             </div>
 
             <div>
-              <Label>Preview Video Link</Label>
+              <Label>Video Upload</Label>
               <Input
-                name="videoLink"
-                value={courseData.videoLink}
-                onChange={handleCourseChange}
-                placeholder="YouTube/Drive link"
+                type="file"
+                accept="video/*"
+                onChange={handlePreviewVideoChange}
               />
             </div>
 
             <div>
               <Label>Thumbnail Upload</Label>
-              <Input type="file" onChange={handleThumbnailChange} />
+              <Input type="file" accept="image/*" onChange={handleThumbnailChange} />
               {courseData.thumbnail && (
                 <img
                   src={URL.createObjectURL(courseData.thumbnail)}
@@ -275,6 +348,7 @@ export default function AddCourse() {
           </CardContent>
         </Card>
 
+        {/* Modules & Lessons */}
         <Card>
           <CardHeader>
             <CardTitle>Modules & Lessons</CardTitle>
@@ -299,8 +373,8 @@ export default function AddCourse() {
                     <h3 className="font-semibold text-lg">
                       {index + 1}. {mod.title}
                     </h3>
-                    
-                    <div className="space-y-2">
+
+                    <div className="space-y-4">
                       <div className="flex gap-4 items-center">
                         <Input
                           placeholder="Lesson Title"
@@ -311,31 +385,40 @@ export default function AddCourse() {
                           }}
                         />
                       </div>
-                      <div className="flex gap-4 items-center">
-                        <Input
-                          placeholder="Lesson Video Link"
-                          value={selectedModule === index ? lessonVideoLink : ""}
+                      <div>
+                        <Textarea
+                          placeholder="Lesson Description"
+                          value={selectedModule === index ? lessonDescription : ""}
                           onChange={(e) => {
                             setSelectedModule(index);
-                            setLessonVideoLink(e.target.value);
+                            setLessonDescription(e.target.value);
                           }}
-                          onKeyDown={(e) => e.key === 'Enter' && addLesson()}
+                          className="min-h-[100px]"
+                        />
+                      </div>
+                      <div className="flex gap-4 items-center">
+                        <Input
+                          type="file"
+                          accept="video/*"
+                          ref={lessonVideoInputRef}
+                          onChange={(e) => {
+                            setSelectedModule(index);
+                            setLessonVideo(e.target.files[0]);
+                          }}
                         />
                         <Button type="button" onClick={addLesson}>
                           Add Lesson
                         </Button>
                       </div>
                     </div>
-                    
+
                     {mod.lessons.length > 0 && (
                       <div className="space-y-2">
                         {mod.lessons.map((lesson, idx) => (
                           <div key={idx} className="border p-3 rounded-md">
                             <div className="font-medium">{idx + 1}. {lesson.title}</div>
-                            {lesson.videoLink && (
-                              <div className="text-sm text-gray-600 mt-1">
-                                Video: <a href={lesson.videoLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">{lesson.videoLink}</a>
-                              </div>
+                            {lesson.description && (
+                              <p className="text-sm text-gray-600 mt-1">{lesson.description}</p>
                             )}
                           </div>
                         ))}
