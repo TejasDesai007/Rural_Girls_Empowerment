@@ -1,6 +1,7 @@
 import { initializeApp, getApp, getApps } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getMessaging, onMessage } from "firebase/messaging";
 
 // Firebase config (from your Firebase Console)
 const firebaseConfig = {
@@ -21,4 +22,7 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
-export { db, auth, provider };
+// For Cloud Messaging
+const messaging = getMessaging(app);
+
+export { db, auth, provider, messaging, onMessage };

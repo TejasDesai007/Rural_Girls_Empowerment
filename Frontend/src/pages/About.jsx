@@ -4,6 +4,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import axios from "axios";
 
+import { HeroHighlight, Highlight } from "../components/ui/hero-highlight";
+import { ContainerTextFlip } from "../components/ui/container-text-flip";
+
 export default function About() {
   const staticAdmins = [
     {
