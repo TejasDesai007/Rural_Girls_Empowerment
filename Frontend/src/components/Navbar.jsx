@@ -42,13 +42,30 @@ export default function Navbar() {
           setVariant("user");
         }
       } else {
-        // If Firebase says no user is logged in, clear everything
+        // Clear everything when logged out
         setUser(null);
         setVariant("guest");
         setUnreadNotifications([]);
         setIsNotificationOpen(false);
       }
     });
+
+    // Handle page reload - get data from session storage first
+    const storedUserJSON = sessionStorage.getItem("user");
+    const storedRole = sessionStorage.getItem("role");
+    
+    if (storedUserJSON && storedRole) {
+      try {
+        const storedUser = JSON.parse(storedUserJSON);
+        setUser(storedUser);
+        setVariant(storedRole);
+      } catch (error) {
+        console.error("Error parsing stored user:", error);
+        // Clear invalid data
+        sessionStorage.removeItem("user");
+        sessionStorage.removeItem("role");
+      }
+    }
 
     return () => unsubscribe();
   }, []);
@@ -114,6 +131,13 @@ export default function Navbar() {
     }
   };
 
+  // Fetch notifications when user changes
+  useEffect(() => {
+    if (user) {
+      fetchUnreadNotifications();
+    }
+  }, [user]);
+
   const handleNotificationToggle = () => {
     const nextState = !isNotificationOpen;
     setIsNotificationOpen(nextState);
@@ -143,10 +167,6 @@ export default function Navbar() {
     try {
       // Sign out from Firebase
       await signOut(auth);
-      
-      // Update local state
-      setUser(null);
-      setVariant("guest");
       
       // Navigate to home page
       navigate("/");
@@ -423,7 +443,6 @@ export default function Navbar() {
             </SheetContent>
           </Sheet>
         </div>
-
       </div>
     </nav>
   );
