@@ -19,37 +19,11 @@ export default function Navbar() {
   const navigate = useNavigate();
   const notificationRef = useRef(null);
 
-  // For debugging only
+  // Auth state management with proper synchronization
   useEffect(() => {
-    const role = sessionStorage.getItem("role");
-    console.log("Session role:", role);
-  }, []);
-
-  useEffect(() => {
-    // First check if we have user data in sessionStorage
-    const storedUserJSON = sessionStorage.getItem("user");
-    const storedRole = sessionStorage.getItem("role");
-    
-    if (storedUserJSON && storedRole) {
-      try {
-        const storedUser = JSON.parse(storedUserJSON);
-        setUser(storedUser);
-        setVariant(storedRole);
-      } catch (error) {
-        console.error("Error parsing stored user:", error);
-      }
-    }
-
-    // Then also set up the Firebase auth listener
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
-        // If we have a Firebase user but no stored role, default to "user"
-        // DON'T override an existing role from session storage
-        if (!sessionStorage.getItem("role")) {
-          sessionStorage.setItem("role", "user");
-        }
-        
-        // Get the current role from session storage
+        // Get role from session storage or default to "user"
         const currentRole = sessionStorage.getItem("role") || "user";
         
         const userData = {
@@ -60,15 +34,15 @@ export default function Navbar() {
           role: currentRole,
         };
         
+        // Update state first
         setUser(userData);
         setVariant(currentRole);
         
-        // Only set user to session storage if it doesn't exist
-        if (!sessionStorage.getItem("user")) {
-          sessionStorage.setItem("user", JSON.stringify(userData));
-        }
+        // Then update session storage
+        sessionStorage.setItem("user", JSON.stringify(userData));
+        sessionStorage.setItem("role", currentRole);
       } else {
-        // If Firebase says no user is logged in, clear everything
+        // Clear everything when logged out
         setUser(null);
         setVariant("guest");
         sessionStorage.removeItem("user");
@@ -78,7 +52,38 @@ export default function Navbar() {
       }
     });
 
+    // Handle page reload - get data from session storage first
+    const storedUserJSON = sessionStorage.getItem("user");
+    const storedRole = sessionStorage.getItem("role");
+    
+    if (storedUserJSON && storedRole) {
+      try {
+        const storedUser = JSON.parse(storedUserJSON);
+        setUser(storedUser);
+        setVariant(storedRole);
+      } catch (error) {
+        console.error("Error parsing stored user:", error);
+        // Clear invalid data
+        sessionStorage.removeItem("user");
+        sessionStorage.removeItem("role");
+      }
+    }
+
     return () => unsubscribe();
+  }, []);
+
+  // Add click outside handler for notifications dropdown
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setIsNotificationOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
   const fetchUnreadNotifications = async () => {
@@ -101,6 +106,13 @@ export default function Navbar() {
       setLoadingNotifications(false);
     }
   };
+
+  // Fetch notifications when user changes
+  useEffect(() => {
+    if (user) {
+      fetchUnreadNotifications();
+    }
+  }, [user]);
 
   const handleNotificationToggle = () => {
     const nextState = !isNotificationOpen;
@@ -135,10 +147,6 @@ export default function Navbar() {
       
       // Then sign out from Firebase
       await signOut(auth);
-      
-      // Update local state
-      setUser(null);
-      setVariant("guest");
       
       // Navigate to home page
       navigate("/");
@@ -415,7 +423,6 @@ export default function Navbar() {
             </SheetContent>
           </Sheet>
         </div>
-
       </div>
     </nav>
   );
