@@ -32,6 +32,7 @@ import ProductDetails from "./pages/entrepreneur/ProductsDetails";
 import Entrepreneurship from "./pages/entrepreneur/Entrepreneurship";
 import Checkout from "./pages/entrepreneur/Checkout";
 import PaymentMethodPage from "./pages/entrepreneur/PaymentMethod";
+import AdminNotification from "./pages/AdminNotification";
 
 
 
@@ -113,6 +114,7 @@ function App() {
             <Route path="/reports" element={<Reports />} />
             <Route path="/addcourse" element={<AddCourse />} />
             <Route path="/add-toolkit" element={<AddToolkit />} />
+            <Route path="/admin-notification" element={<AdminNotification />} />
 
             {/* Notifications */}
             <Route path="/mentor-notification" element={<MentorNotification />} />

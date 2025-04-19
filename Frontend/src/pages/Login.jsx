@@ -133,8 +133,8 @@ const Login = () => {
   }, []);
 
   return (
-    <div className="overflow-x-hidden relative flex w-full min-h-screen flex-col items-center justify-center bg-white dark:bg-black">
-      <div className="flex items-center justify-center min-h-screen w-full bg-white dark:bg-black px-4">
+    <div className="overflow-x-hidden relative flex w-full min-h-auto flex-col items-center justify-center bg-white dark:bg-black">
+      <div className="flex items-center justify-center mt-20 mb-20 min-h-auto w-full bg-white dark:bg-black px-4">
         <div className="shadow-input w-full max-w-md rounded-none bg-white p-4 md:rounded-2xl md:p-8 dark:bg-black">
           {/* Logo + App name */}
           <div className="mb-4 flex flex-col items-center">
