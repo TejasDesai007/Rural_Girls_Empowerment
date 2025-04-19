@@ -19,6 +19,17 @@ import {
   MobileNavMenu,
 } from "@/components/ui/resizable-navbar";
 
+const generateColorFromName = (name) => {
+  const colors = ["#7c3aed", "#db2777", "#0ea5e9", "#059669", "#f59e0b", "#ef4444", "#10b981"];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % colors.length;
+  return colors[index];
+};
+
+
 export default function MainNavbar() {
   const [user, setUser] = useState(null);
   const [variant, setVariant] = useState("guest");
@@ -27,7 +38,7 @@ export default function MainNavbar() {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isExploreOpen, setIsExploreOpen] = useState(false);
-  
+
   const navigate = useNavigate();
   const notificationRef = useRef(null);
   const exploreMenuRef = useRef(null);
@@ -38,7 +49,7 @@ export default function MainNavbar() {
         try {
           // Fetch user role from database based on email
           const userRole = await fetchUserRole(firebaseUser.email);
-          
+
           const userData = {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
@@ -46,10 +57,10 @@ export default function MainNavbar() {
             photoURL: firebaseUser.photoURL,
             role: userRole,
           };
-          
+
           setUser(userData);
           setVariant(userRole);
-          
+
           // Store user data in session storage for page reloads
           sessionStorage.setItem("user", JSON.stringify(userData));
           sessionStorage.setItem("role", userRole);
@@ -64,7 +75,7 @@ export default function MainNavbar() {
         setVariant("guest");
         setUnreadNotifications([]);
         setIsNotificationOpen(false);
-        
+
         // Clear session storage
         sessionStorage.removeItem("user");
         sessionStorage.removeItem("role");
@@ -74,7 +85,7 @@ export default function MainNavbar() {
     // Handle page reload - get data from session storage first
     const storedUserJSON = sessionStorage.getItem("user");
     const storedRole = sessionStorage.getItem("role");
-    
+
     if (storedUserJSON && storedRole) {
       try {
         const storedUser = JSON.parse(storedUserJSON);
@@ -109,31 +120,31 @@ export default function MainNavbar() {
       const usersRef = collection(db, "users");
       const q = query(usersRef, where("email", "==", email));
       const querySnapshot = await getDocs(q);
-      
+
       if (!querySnapshot.empty) {
         // User found in users collection
         const userData = querySnapshot.docs[0].data();
         return userData.role || "user"; // Default to "user" if role is not specified
       }
-      
+
       // If not found in users collection, check admin collection
       const adminsRef = collection(db, "admins");
       const adminQuery = query(adminsRef, where("email", "==", email));
       const adminSnapshot = await getDocs(adminQuery);
-      
+
       if (!adminSnapshot.empty) {
         return "admin";
       }
-      
+
       // If not found in admins, check mentors collection
       const mentorsRef = collection(db, "mentors");
       const mentorQuery = query(mentorsRef, where("email", "==", email));
       const mentorSnapshot = await getDocs(mentorQuery);
-      
+
       if (!mentorSnapshot.empty) {
         return "mentor";
       }
-      
+
       // If no role is found in any collection, default to "user"
       return "user";
     } catch (error) {
@@ -189,7 +200,19 @@ export default function MainNavbar() {
 
   // Function to navigate to the appropriate notification page based on user role
   const navigateToNotifications = () => {
-    navigate("/notification");
+    // Route to different notification pages based on user role
+    switch (variant) {
+      case "admin":
+        navigate("/admin-notification");
+        break;
+      case "mentor":
+        navigate("/mentor-notification");
+        break;
+      case "user":
+      default:
+        navigate("/user-notification");
+        break;
+    }
     setIsNotificationOpen(false);
   };
 
@@ -197,7 +220,7 @@ export default function MainNavbar() {
     try {
       // Sign out from Firebase
       await signOut(auth);
-      
+
       // Navigate to home page
       navigate("/");
     } catch (error) {
@@ -229,7 +252,7 @@ export default function MainNavbar() {
         link: "/Entrepreneurship",
       },
     ];
-    
+
     // Role-specific navigation items
     switch (variant) {
       case "user":
@@ -342,20 +365,20 @@ export default function MainNavbar() {
             {navItems.map((item, idx) => (
               item.dropdown ? (
                 <div key={`dropdown-${idx}`} className="relative" ref={exploreMenuRef}>
-                  <button 
+                  <button
                     onClick={() => setIsExploreOpen(!isExploreOpen)}
                     className="flex items-center space-x-1 text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white transition-colors duration-200 font-medium relative group"
                   >
                     <span>{item.name}</span>
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      width="16" 
-                      height="16" 
-                      viewBox="0 0 24 24" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      strokeWidth="2" 
-                      strokeLinecap="round" 
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
                       strokeLinejoin="round"
                       className={`transition-transform duration-300 ${isExploreOpen ? 'rotate-180' : ''}`}
                     >
@@ -397,15 +420,15 @@ export default function MainNavbar() {
           <div className="flex items-center gap-4">
             {variant === "guest" ? (
               <>
-                <NavbarButton 
-                  variant="secondary" 
+                <NavbarButton
+                  variant="secondary"
                   onClick={() => navigate("/register")}
                   className="transition-all duration-300 ease-in-out hover:shadow-md hover:-translate-y-0.5"
                 >
                   Register
                 </NavbarButton>
-                <NavbarButton 
-                  variant="primary" 
+                <NavbarButton
+                  variant="primary"
                   onClick={() => navigate("/login")}
                   className="transition-all duration-300 ease-in-out hover:shadow-md hover:-translate-y-0.5"
                 >
@@ -416,20 +439,20 @@ export default function MainNavbar() {
               <>
                 {/* Notification Bell Icon */}
                 <div className="relative">
-                  <button 
+                  <button
                     onClick={navigateToNotifications}
                     className="p-2 text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white transition-colors duration-200 hover:scale-110 transform"
                     aria-label="Notifications"
                   >
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      width="20" 
-                      height="20" 
-                      viewBox="0 0 24 24" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      strokeWidth="2" 
-                      strokeLinecap="round" 
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
                       strokeLinejoin="round"
                       className="transition-transform duration-300 ease-in-out hover:rotate-12"
                     >
@@ -443,42 +466,36 @@ export default function MainNavbar() {
                     )}
                   </button>
                 </div>
-                
+
                 {/* Profile Icon */}
-                <NavbarButton 
-                  variant="secondary" 
+                <NavbarButton
+                  variant="secondary"
                   onClick={() => navigate("/my-profile")}
                   className="transition-all duration-300 ease-in-out hover:shadow-md hover:-translate-y-0.5"
                 >
                   <div className="flex items-center gap-2">
-                    {user?.photoURL ? (
-                      <img 
-                        src={user.photoURL} 
-                        alt="Profile" 
-                        className="h-6 w-6 rounded-full ring-2 ring-transparent hover:ring-blue-500 transition-all duration-300"
+                    {user?.photoURL && user.photoURL.trim() !== "" ? (
+                      <img
+                        src={user.photoURL}
+                        alt="Profile"
+                        className="h-6 w-6 rounded-full ring-2 ring-transparent hover:ring-pink-500 transition-all duration-300"
                       />
                     ) : (
-                      <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        width="18" 
-                        height="18" 
-                        viewBox="0 0 24 24" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        strokeWidth="2" 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round"
+                      <div
+                        className="h-6 w-6 flex items-center justify-center rounded-full text-sm font-medium text-white transition-all duration-300"
+                        style={{
+                          backgroundColor: generateColorFromName(user?.displayName || user?.email || "User"),
+                        }}
                       >
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                      </svg>
+                        {(user?.displayName || user?.email || "U")[0].toUpperCase()}
+                      </div>
                     )}
                     <span>{user?.displayName || user?.email?.split('@')[0] || "Profile"}</span>
                   </div>
                 </NavbarButton>
-                
-                <NavbarButton 
-                  variant="primary" 
+
+                <NavbarButton
+                  variant="primary"
                   onClick={handleLogout}
                   className="transition-all duration-300 ease-in-out hover:shadow-md hover:-translate-y-0.5"
                 >
@@ -504,44 +521,44 @@ export default function MainNavbar() {
             />
           </MobileNavHeader>
 
-          <MobileNavMenu 
-            isOpen={isMobileMenuOpen} 
+          <MobileNavMenu
+            isOpen={isMobileMenuOpen}
             onClose={() => setIsMobileMenuOpen(false)}
             className={`transition-all duration-300 ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0'}`}
           >
             {/* Flatten all menu items for mobile */}
-            {navItems.flatMap((item, idx) => 
+            {navItems.flatMap((item, idx) =>
               item.dropdown
                 ? [
-                    <div key={`mobile-dropdown-${idx}`} className="px-4 py-2 text-sm font-medium text-neutral-900 dark:text-white">
-                      {item.name}
-                    </div>,
-                    ...item.items.map((subItem, subIdx) => (
-                      <Link
-                        key={`mobile-submenu-${idx}-${subIdx}`}
-                        to={subItem.link}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="block px-8 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors duration-200"
-                      >
-                        {subItem.name}
-                      </Link>
-                    ))
-                  ]
-                : [
+                  <div key={`mobile-dropdown-${idx}`} className="px-4 py-2 text-sm font-medium text-neutral-900 dark:text-white">
+                    {item.name}
+                  </div>,
+                  ...item.items.map((subItem, subIdx) => (
                     <Link
-                      key={`mobile-link-${idx}`}
-                      to={item.link}
+                      key={`mobile-submenu-${idx}-${subIdx}`}
+                      to={subItem.link}
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="block px-4 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors duration-200"
+                      className="block px-8 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors duration-200"
                     >
-                      {item.name}
+                      {subItem.name}
                     </Link>
-                  ]
+                  ))
+                ]
+                : [
+                  <Link
+                    key={`mobile-link-${idx}`}
+                    to={item.link}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block px-4 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors duration-200"
+                  >
+                    {item.name}
+                  </Link>
+                ]
             )}
-            
+
             {variant !== "guest" && (
               <Link
-                to="/notification"
+                to={variant === "admin" ? "/admin-notification" : variant === "mentor" ? "/mentor-notification" : "/user-notification"}
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="relative block px-4 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors duration-200"
               >
@@ -555,7 +572,7 @@ export default function MainNavbar() {
                 </div>
               </Link>
             )}
-            
+
             <div className="flex w-full flex-col gap-4 px-4 py-2">
               {variant === "guest" ? (
                 <>
