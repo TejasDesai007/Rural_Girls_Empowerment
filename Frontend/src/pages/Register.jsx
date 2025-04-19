@@ -18,6 +18,9 @@ import { cn } from "../lib/utils";
 
 import logo from "../assets/icons/logo.png";
 
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "@/firebase";
+
 const Register = () => {
   const navigate = useNavigate();
   const [role, setRole] = useState("user");
@@ -48,12 +51,31 @@ const Register = () => {
 
       const data = response.data;
       sessionStorage.setItem("user", JSON.stringify(data));
+
+      // 🟢 If new user (i.e., just registered)
+      if (!data.alreadyExists) {
+        await addDoc(collection(db, "admin_notifications"), {
+          title: `New ${role.charAt(0).toUpperCase() + role.slice(1)} Registered`,
+          description: `${formData.name} registered with role "${role}" via Google.`,
+          createdAt: serverTimestamp(),
+          read: false,
+          additionalData: {
+            name: formData.name,
+            email: user.email,
+            contact: formData.contact,
+            role,
+          },
+        });
+      }
+
       alert(data.alreadyExists ? "Welcome back!" : "Account created!");
       navigate("/dashboard");
+
     } catch (error) {
       console.error("Google authentication failed:", error);
     }
   };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
