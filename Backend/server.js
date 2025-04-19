@@ -5,6 +5,7 @@ const bodyParser = require("body-parser");
 const path = require("path");
 const authRoutes = require("./routes/authRoutes");
 const courseRoutes = require("./routes/courseRoutes");
+const toolkitRoutes = require("./routes/toolkitRoute");
 
 
 const app = express();
@@ -29,6 +30,7 @@ app.use(
 
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
+app.use('/api/toolkit', toolkitRoutes);
 
 
 app.listen(PORT, () => {

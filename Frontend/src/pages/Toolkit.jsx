@@ -2,11 +2,17 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getAllToolkits } from "../services/toolkitService";
+import { Download } from "lucide-react";
+import axios from "axios";
+
+const API_URL = "http://localhost:5000/api"; // Replace with your actual API URL
 
 const Toolkit = () => {
   const [toolkits, setToolkits] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTag, setActiveTag] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(null);
 
   useEffect(() => {
     document.title = "Toolkits | Rural Empowerment";
@@ -14,19 +20,82 @@ const Toolkit = () => {
   }, []);
 
   const fetchToolkits = async () => {
-    const data = await getAllToolkits();
-    setToolkits(data);
+    setLoading(true);
+    try {
+      const data = await getAllToolkits();
+      const normalizedData = data.map(toolkit => ({
+        ...toolkit,
+        // Convert category array to tags if needed
+        tags: toolkit.category || toolkit.tags || [],
+      }));
+      setToolkits(normalizedData);
+    } catch (error) {
+      console.error("Error fetching toolkits:", error);
+      setToolkits([]);
+    }
+    setLoading(false);
+  };
+
+  const handleDownload = async (toolkit) => {
+    try {
+      setDownloading(toolkit.id);
+      
+      // Request the toolkit files as a zip archive
+      const response = await axios({
+        url: `${API_URL}/toolkit/${toolkit.id}/download`,
+        method: 'GET',
+        responseType: 'blob', // Important for file downloads
+      });
+      
+      // Create a blob from the response data
+      const blob = new Blob([response.data], { 
+        type: response.headers['content-type'] 
+      });
+      
+      // Create a URL for the blob
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a temporary anchor element to trigger the download
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${toolkit.title.replace(/\s+/g, '-')}-toolkit.zip`);
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error downloading toolkit:", error);
+      alert("Failed to download the toolkit. Please try again later.");
+    } finally {
+      setDownloading(null);
+    }
   };
 
   const filteredToolkits = toolkits.filter((item) => {
-    const matchTag = activeTag === "all" || item.tags.includes(activeTag);
-    const matchSearch =
-      item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchTag && matchSearch;
+    const title = item.title?.toLowerCase() || "";
+    const description = item.description?.toLowerCase() || "";
+    const search = searchTerm.toLowerCase();
+    const matchSearch = title.includes(search) || description.includes(search);
+
+    const tagsArray = item.tags || [];
+    const matchTag =
+      activeTag === "all" || tagsArray.map(tag => tag.toLowerCase()).includes(activeTag.toLowerCase());
+
+    return matchSearch && matchTag;
   });
 
-  const tags = ["all", "business", "health", "education", "tech"];
+  // Get unique tags from all toolkits
+  const uniqueTags = ["all", ...new Set(toolkits.flatMap(toolkit => toolkit.tags || []))];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen px-6 md:px-12 py-12 bg-gradient-to-br from-blue-50 to-purple-50">
@@ -52,7 +121,7 @@ const Toolkit = () => {
             className="w-full md:w-1/2"
           />
           <div className="flex flex-wrap gap-2">
-            {tags.map((tag) => (
+            {uniqueTags.map((tag) => (
               <Button
                 key={tag}
                 size="sm"
@@ -79,10 +148,10 @@ const Toolkit = () => {
                   {toolkit.title}
                 </h3>
                 <p className="text-gray-600 text-sm mb-3">
-                  {toolkit.description}
+                  {toolkit.description || "No description available"}
                 </p>
                 <div className="flex flex-wrap gap-1 mb-4">
-                  {toolkit.tags.map((tag) => (
+                  {(toolkit.tags || []).map((tag) => (
                     <span
                       key={tag}
                       className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full"
@@ -91,14 +160,41 @@ const Toolkit = () => {
                     </span>
                   ))}
                 </div>
+                
+                {toolkit.files && toolkit.files.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-sm font-medium text-gray-700 mb-1">Files ({toolkit.files.length}):</p>
+                    <ul className="text-xs text-gray-600">
+                      {toolkit.files.slice(0, 3).map((file, index) => (
+                        <li key={index} className="truncate">
+                          • {file.originalName || file.fileName}
+                        </li>
+                      ))}
+                      {toolkit.files.length > 3 && (
+                        <li>• ...and {toolkit.files.length - 3} more</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
               </div>
-              <a
-                href={toolkit.downloadURL}
-                target="_blank"
-                rel="noopener noreferrer"
+              
+              <Button 
+                className="w-full"
+                onClick={() => handleDownload(toolkit)}
+                disabled={downloading === toolkit.id}
               >
-                <Button className="w-full">Download</Button>
-              </a>
+                {downloading === toolkit.id ? (
+                  <span className="flex items-center justify-center">
+                    <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2" />
+                    Downloading...
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center">
+                    <Download className="h-4 w-4 mr-2" />
+                    Download Files
+                  </span>
+                )}
+              </Button>
             </div>
           ))
         ) : (

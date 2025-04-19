@@ -12,11 +12,11 @@ import Toolkit from "./pages/Toolkit";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import ChatAssistant from "./pages/ChatAssistant";
-import EntrepreneurToolkit from "./pages/EntrepreneurToolkit";
 
 import About from "./pages/About";
 import PrivacyTerms from "./pages/PrivacyTerms";
 import Navbar from "./components/Navbar";
+import DownloadFile from "./pages/testCloudinary";
 
 // Admin imports
 import AdminPanel from "./pages/AdminPanel";
@@ -25,6 +25,9 @@ import Reports from "./pages/Reports";
 import AddCourse from "./pages/AddCourse";
 import MyProfile from "./pages/MyProfile";
 import AddToolkit from "./pages/AddToolkit";
+import ProductDetails from "./pages/entrepreneur/ProductsDetails";
+
+import Entrepreneurship from "./pages/entrepreneur/Entrepreneurship";
 
 
 //Mentor imports
@@ -61,17 +64,22 @@ function App() {
         <Route path="/courses" element={<Courses />} />
         <Route path="/courses/:courseId" element={<CoursePlayer />} />
         <Route path="/mentor-match" element={<MentorMatch />} />
-        <Route path="/toolkit" element={<Toolkit />} />
+        <Route path="/testCloud" element={<DownloadFile />} />
+        
 
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
 
         <Route path="/chat-assistant" element={<ChatAssistant />} />
-        <Route path="/entrepreneur-toolkit" element={<EntrepreneurToolkit />} />
+        
         <Route path="/about" element={<About />} />
         <Route path="/privacy-terms" element={<PrivacyTerms />} />
         <Route path="/my-profile" element={<MyProfile />} />
-
+        <Route path="/addtoolkit" element={<AddToolkit />} />
+        <Route path="/toolkit" element={<Toolkit />} />
+        <Route path="/Entrepreneurship" element={<Entrepreneurship />} />
+        <Route path="/products/:id" element={<ProductDetails />} />
+        
 
         {/* Admin Routes */}
         <Route path="/admin-panel" element={<AdminPanel />} />
@@ -86,5 +94,4 @@ function App() {
     </Router>
   );
 }
-
 export default App;
