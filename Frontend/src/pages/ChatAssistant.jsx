@@ -380,7 +380,7 @@ Query: ${newPrompt}`;
                 whileHover={{ scale: 1.05, backgroundColor: "#EBF5FF" }}
                 whileTap={{ scale: 0.98 }}
                 transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                className="px-3 py-1 rounded-lg border border-gray-200 text-sm hover:bg-blue-50 transition-colors"
+                className="px-3 py-1 rounded-lg border border-gray-200 text-sm hover:bg-pink-50 transition-colors"
                 onClick={() => handleQuickPrompt(prompt)}
                 disabled={loading}
               >
@@ -411,7 +411,7 @@ Query: ${newPrompt}`;
               {getWelcomeMessage()}
             </motion.p>
             <motion.div 
-              className="flex gap-2 text-sm bg-blue-50 p-2 rounded-md text-blue-700"
+              className="flex gap-2 text-sm bg-pink-50 p-2 rounded-md text-pink-500"
               whileHover={{ y: -2 }}
             >
               <Globe size={16} />
@@ -431,7 +431,7 @@ Query: ${newPrompt}`;
               >
                 <div
                   className={`inline-block rounded-lg px-4 py-2 text-sm ${msg.role === "user"
-                    ? "bg-blue-100 text-blue-800 rounded-br-none"
+                    ? "bg-pink-100 text-pink-800 rounded-br-none"
                     : msg.content.startsWith("❌")
                       ? "bg-red-100 text-red-700 rounded-bl-none"
                       : "bg-gray-100 text-gray-700 rounded-bl-none"
@@ -496,7 +496,7 @@ Query: ${newPrompt}`;
             <Button
               onClick={() => handleSend()}
               disabled={loading || !input.trim()}
-              className="flex-grow sm:flex-grow-0"
+              className="flex-grow sm:flex-grow-0 bg-pink-500 text-white hover:bg-pink-700 disabled:bg-gray-400 disabled:text-gray-300 transition-all duration-300"
             >
               {loading ?
                 <LoaderCircle className="animate-spin w-4 h-4" /> :

@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { getAllToolkits } from "../services/toolkitService";
 import { Download } from "lucide-react";
 import axios from "axios";
+import { HoverEffect } from "../components/ui/card-hover-effect";
 
 const API_URL = "http://localhost:5000/api"; // Replace with your actual API URL
 
@@ -89,6 +90,19 @@ const Toolkit = () => {
   // Get unique tags from all toolkits
   const uniqueTags = ["all", ...new Set(toolkits.flatMap(toolkit => toolkit.tags || []))];
 
+  // Format toolkits for HoverEffect component
+  const formattedToolkits = filteredToolkits.map(toolkit => ({
+    title: toolkit.title,
+    description: toolkit.description || "No description available",
+    link: "#", // Placeholder link
+    tags: toolkit.tags || [],
+    files: toolkit.files || [],
+    id: toolkit.id,
+    // We'll handle the download button separately
+    downloadHandler: () => handleDownload(toolkit),
+    isDownloading: downloading === toolkit.id
+  }));
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -98,7 +112,7 @@ const Toolkit = () => {
   }
 
   return (
-    <div className="min-h-screen px-6 md:px-12 py-12 bg-gradient-to-br from-blue-50 to-purple-50">
+    <div className="min-h-screen px-6 md:px-12 py-12 bg-gradient-to-br from-pink-50 to-purple-50">
       {/* 🧰 ToolkitIntro */}
       <section className="mb-10 text-center">
         <h2 className="text-3xl font-bold text-gray-800 mb-3">
@@ -135,26 +149,23 @@ const Toolkit = () => {
         </div>
       </section>
 
-      {/* 📦 ToolkitGrid */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* 📦 ToolkitGrid with HoverEffect */}
+      <section>
         {filteredToolkits.length > 0 ? (
-          filteredToolkits.map((toolkit) => (
-            <div
-              key={toolkit.id}
-              className="bg-white shadow-md rounded-xl p-5 flex flex-col justify-between"
-            >
-              <div>
+          <HoverEffect items={formattedToolkits} render={(toolkit) => (
+            <div className="flex flex-col h-full">
+              <div className="flex-1">
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                   {toolkit.title}
                 </h3>
                 <p className="text-gray-600 text-sm mb-3">
-                  {toolkit.description || "No description available"}
+                  {toolkit.description}
                 </p>
                 <div className="flex flex-wrap gap-1 mb-4">
-                  {(toolkit.tags || []).map((tag) => (
+                  {toolkit.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full"
+                      className="text-xs px-2 py-1 bg-blue-100 text-pink-500 rounded-full"
                     >
                       {tag}
                     </span>
@@ -179,11 +190,11 @@ const Toolkit = () => {
               </div>
               
               <Button 
-                className="w-full"
-                onClick={() => handleDownload(toolkit)}
-                disabled={downloading === toolkit.id}
+                className="w-full mt-4"
+                onClick={toolkit.downloadHandler}
+                disabled={toolkit.isDownloading}
               >
-                {downloading === toolkit.id ? (
+                {toolkit.isDownloading ? (
                   <span className="flex items-center justify-center">
                     <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2" />
                     Downloading...
@@ -196,7 +207,7 @@ const Toolkit = () => {
                 )}
               </Button>
             </div>
-          ))
+          )} />
         ) : (
           <p className="text-center text-gray-500 col-span-3">
             No toolkits found.

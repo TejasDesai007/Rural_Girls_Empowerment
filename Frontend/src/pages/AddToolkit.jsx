@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -7,9 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { motion } from "framer-motion";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import axios from "axios";
+import { auth, db } from "../firebase"; // Assuming you're using Firestore for roles
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 
-// Use a hardcoded API URL or import it from a config file
-// In Next.js, you would typically use import.meta.env.VITE_API_URL or similar
 const API_URL = "http://localhost:5000/api";
 
 const initialFormState = {
@@ -26,38 +27,71 @@ export default function AddToolkit() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState(null); // "success", "error", null
   const [errorMessage, setErrorMessage] = useState("");
+  const [isAuthorized, setIsAuthorized] = useState(false); // Track if user has mentor role
+  const [user, setUser] = useState(null); // Store user details
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user && isMounted) {
+        // Fetch the user's role from Firestore
+        const userDoc = await getDoc(doc(db, "users", user.uid)); // Assuming 'users' collection
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          if (userData.role === "mentor") {
+            setIsAuthorized(true);
+            setUser(user);
+          } else {
+            setIsAuthorized(false);
+            navigate("/unauthorized"); // Redirect to unauthorized page
+          }
+        } else {
+          setIsAuthorized(false);
+          navigate("/unauthorized"); // Redirect if no user data exists
+        }
+      } else {
+        setIsAuthorized(false);
+        navigate("/login"); // Redirect to login page if not authenticated
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, []);
 
   const handleChange = useCallback((e) => {
     const { name, value, files } = e.target;
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
-      [name]: name === "files" ? Array.from(files) : value
+      [name]: name === "files" ? Array.from(files) : value,
     }));
   }, []);
 
   const handleAddCategory = useCallback(() => {
     const trimmedCategory = newCategory.trim();
     if (trimmedCategory && !form.category.includes(trimmedCategory)) {
-      setForm(prev => ({
+      setForm((prev) => ({
         ...prev,
-        category: [...prev.category, trimmedCategory]
+        category: [...prev.category, trimmedCategory],
       }));
       setNewCategory("");
     }
   }, [newCategory, form.category]);
 
   const handleRemoveCategory = useCallback((categoryToRemove) => {
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
-      category: prev.category.filter(category => category !== categoryToRemove)
+      category: prev.category.filter((category) => category !== categoryToRemove),
     }));
   }, []);
+
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     setErrorMessage("");
     setUploadStatus(null);
-
-    // Validation checks...
 
     try {
       const formData = new FormData();
@@ -65,7 +99,7 @@ export default function AddToolkit() {
       formData.append("description", form.description);
       formData.append("category", JSON.stringify(form.category));
 
-      Array.from(form.files).forEach(file => {
+      Array.from(form.files).forEach((file) => {
         formData.append("files", file);
       });
 
@@ -76,15 +110,14 @@ export default function AddToolkit() {
             (progressEvent.loaded * 100) / progressEvent.total
           );
           setUploadProgress(percentCompleted);
-        }
+        },
       });
 
-      console.log("Toolkit created:", response.data);  // ✅ Fixed
+      console.log("Toolkit created:", response.data);
       setUploadStatus("success");
       setForm(initialFormState);
       setNewCategory("");
       document.getElementById("files").value = "";
-
     } catch (error) {
       console.error("Error:", error);
       setUploadStatus("error");
@@ -94,16 +127,20 @@ export default function AddToolkit() {
     }
   }, [form]);
 
+  if (!isAuthorized) {
+    return null; // Return nothing or a loading state until the role is confirmed
+  }
+
   return (
     <motion.div
-      className="p-6 md:p-10 bg-orange-50 min-h-screen"
+      className="p-6 md:p-10 bg-pink-50 min-h-screen"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
       <Card className="max-w-3xl mx-auto">
         <CardHeader>
-          <CardTitle className="text-center text-orange-600 text-3xl font-bold">
+          <CardTitle className="text-center text-pink-500 text-3xl font-bold">
             Add New Toolkit
           </CardTitle>
         </CardHeader>
@@ -169,7 +206,7 @@ export default function AddToolkit() {
                   className="flex-1"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
-                      e.preventDefault(); // Prevent form submission
+                      e.preventDefault();
                       handleAddCategory();
                     }
                   }}
@@ -188,13 +225,13 @@ export default function AddToolkit() {
                   {form.category.map((category) => (
                     <div
                       key={category}
-                      className="flex items-center bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm"
+                      className="flex items-center bg-pink-100 text-oranpinkge-800 px-3 py-1 rounded-full text-sm"
                     >
                       {category}
                       <button
                         type="button"
                         onClick={() => handleRemoveCategory(category)}
-                        className="ml-2 text-orange-500 hover:text-orange-700"
+                        className="ml-2 text-pink-500 hover:text-pink-700"
                         aria-label={`Remove ${category}`}
                       >
                         ×
@@ -228,7 +265,7 @@ export default function AddToolkit() {
             {uploading && (
               <div className="w-full bg-gray-200 rounded-full h-2.5">
                 <div
-                  className="bg-orange-600 h-2.5 rounded-full"
+                  className="bg-pink-600 h-2.5 rounded-full"
                   style={{ width: `${uploadProgress}%` }}
                 />
                 <p className="text-sm text-gray-500 mt-1 text-center">

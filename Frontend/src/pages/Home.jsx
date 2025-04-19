@@ -193,7 +193,7 @@ const FeaturesSection = () => {
   
   return (
     <section className="px-6 py-16 bg-white">
-      <h1 className="relative z-10 mx-auto mb-5 max-w-4xl text-center text-xl font-bold text-slate-700 md:text-4xl lg:text-7xl dark:text-slate-300">
+      <h1 className="relative z-10 mx-auto mb-5 max-w-4xl text-center text-3xl font-bold text-slate-700 md:text-4xl lg:text-6xl dark:text-slate-300">
         {titleWords.map((word, index) => (
           <motion.span
             key={index}

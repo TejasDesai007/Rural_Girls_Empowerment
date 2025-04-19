@@ -19,7 +19,7 @@ const EntrepreneurDashboard = () => {
         <div className="p-4 md:p-6 bg-gray-50 min-h-screen">
             {/* Header */}
             <header className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-orange-600">
+                <h1 className="text-2xl font-bold text-pink-500">
                     My Business Dashboard
                 </h1>
                 <div className="flex gap-2">

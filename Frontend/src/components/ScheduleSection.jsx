@@ -121,9 +121,6 @@ const ScheduleSection = ({ selectedMentor, menteeId, onBooked, onBack, isBooking
         <h2 className="text-2xl font-semibold">
           Schedule with {selectedMentor.name}
         </h2>
-        <Button variant="ghost" onClick={onBack}>
-          Back to mentors
-        </Button>
       </div>
       <div className="grid md:grid-cols-2 gap-6">
         <div>

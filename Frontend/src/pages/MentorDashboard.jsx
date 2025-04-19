@@ -6,7 +6,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   PlusCircle,
@@ -15,8 +14,9 @@ import {
   Bot,
   Box,
 } from "lucide-react";
-import { auth } from "../firebase";
+import { auth, db } from "../firebase"; // Assuming you're using Firestore for storing roles
 import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore"; // To fetch the role from Firestore
 
 export default function MentorDashboard() {
   const [mentor, setMentor] = useState(null);
@@ -25,11 +25,22 @@ export default function MentorDashboard() {
   useEffect(() => {
     let isMounted = true;
 
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user && isMounted) {
-        setMentor(user);
+        // Fetch the user's role from Firestore
+        const userDoc = await getDoc(doc(db, "users", user.uid)); // "users" collection, assuming uid is the document id
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          if (userData.role === "mentor") {
+            setMentor(user);
+          } else {
+            navigate("/unauthorized"); // Redirect to unauthorized page or any other page
+          }
+        } else {
+          navigate("/unauthorized"); // If no user document exists, redirect
+        }
       } else {
-        navigate("/login");
+        navigate("/login"); // Redirect to login page if not authenticated
       }
     });
 
@@ -88,7 +99,7 @@ export default function MentorDashboard() {
         {quickActions.map((action, idx) => (
           <Card
             key={idx}
-            className="cursor-pointer hover:shadow-lg transition"
+            className="cursor-pointer hover:shadow-lg transition wobble"
             onClick={action.onClick}
           >
             <CardHeader className="flex flex-row items-center justify-between">
