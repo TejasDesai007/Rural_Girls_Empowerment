@@ -14,7 +14,7 @@ import { getAuth, onAuthStateChanged, updateProfile } from "firebase/auth";
 import { toast } from "react-hot-toast";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash, Eye, AlertTriangle } from "lucide-react";
 import { getFirestore, collection, query, where, getDocs, doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
@@ -23,6 +23,7 @@ export default function Profile() {
   const [user, setUser] = useState(null);
   const [userData, setUserData] = useState(null);
   const [userCourses, setUserCourses] = useState([]);
+  const [userToolkits, setUserToolkits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -32,6 +33,8 @@ export default function Profile() {
     skills: []
   });
   const [newSkill, setNewSkill] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState({ id: null, type: null });
   const navigate = useNavigate();
   const auth = getAuth();
   const db = getFirestore();
@@ -42,6 +45,7 @@ export default function Profile() {
         setUser(currentUser);
         await fetchUserData(currentUser.uid);
         await fetchUserCourses(currentUser.uid);
+        await fetchUserToolkits(currentUser.uid);
         console.log(currentUser.uid);
         // Initialize form data with current user info
         setFormData({
@@ -54,6 +58,7 @@ export default function Profile() {
         setUser(null);
         setUserData(null);
         setUserCourses([]);
+        setUserToolkits([]);
       }
       setLoading(false);
     });
@@ -103,14 +108,54 @@ export default function Profile() {
     }
   };
 
-  const handleDeleteCourse = async (courseId) => {
+  const fetchUserToolkits = async (userId) => {
     try {
-      await deleteDoc(doc(db, "courses", courseId));
-      setUserCourses(userCourses.filter(course => course.id !== courseId));
-      toast.success("Course deleted successfully!");
+      const toolkitsRef = collection(db, "toolkits");
+      const q = query(toolkitsRef, where("createdBy", "==", userId));
+      const querySnapshot = await getDocs(q);
+
+      const toolkits = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      setUserToolkits(toolkits);
     } catch (error) {
-      console.error("Error deleting course:", error);
-      toast.error("Failed to delete course");
+      console.error("Error fetching user toolkits from Firestore:", error);
+      toast.error("Failed to fetch user toolkits");
+    }
+  };
+
+  const handleDeleteConfirmation = (id, type) => {
+    setItemToDelete({ id, type });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    try {
+      if (itemToDelete.type === 'course') {
+        await deleteDoc(doc(db, "courses", itemToDelete.id));
+        setUserCourses(userCourses.filter(course => course.id !== itemToDelete.id));
+        toast.success("Course deleted successfully!");
+      } else if (itemToDelete.type === 'toolkit') {
+        await deleteDoc(doc(db, "toolkits", itemToDelete.id));
+        setUserToolkits(userToolkits.filter(toolkit => toolkit.id !== itemToDelete.id));
+        toast.success("Toolkit deleted successfully!");
+      }
+    } catch (error) {
+      console.error(`Error deleting ${itemToDelete.type}:`, error);
+      toast.error(`Failed to delete ${itemToDelete.type}`);
+    } finally {
+      setDeleteDialogOpen(false);
+      setItemToDelete({ id: null, type: null });
+    }
+  };
+
+  const handleViewItem = (id, type) => {
+    if (type === 'course') {
+      navigate(`/courses/${id}`);
+    } else if (type === 'toolkit') {
+      navigate(`/toolkit/${id}`);
     }
   };
 
@@ -170,10 +215,6 @@ export default function Profile() {
     }
   };
 
-  const handleCourseClick = (courseId) => {
-    navigate(`/courses/${courseId}`);
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -218,7 +259,7 @@ export default function Profile() {
               <CardTitle className="text-center">{userData?.name || user.displayName || "User"}</CardTitle>
               <CardDescription className="text-center">{user.email}</CardDescription>
               
-              {/* Role Badge - Added this section */}
+              {/* Role Badge */}
               {userData?.role && (
                 <div className="mt-2">
                   <span className={`text-xs px-3 py-1 rounded-full capitalize font-medium ${getRoleBadgeColor(userData.role)}`}>
@@ -341,22 +382,28 @@ export default function Profile() {
           </Card>
         </div>
 
-        {/* Courses Section */}
+        {/* Right Section for Courses and Toolkits */}
         {(userData?.role === "mentor" || userData?.role === "admin") && (
-          <div className="md:w-2/3">
+          <div className="md:w-2/3 space-y-6">
+            {/* Courses Section */}
             <Card>
-              <CardHeader>
-                <CardTitle>Your Courses</CardTitle>
-                <CardDescription>
-                  {userCourses.length} courses created
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Your Courses</CardTitle>
+                  <CardDescription>
+                    {userCourses.length} courses created
+                  </CardDescription>
+                </div>
+                <Button onClick={() => navigate("/addcourse")}>
+                  Add New Course
+                </Button>
               </CardHeader>
               <CardContent>
                 {userCourses.length > 0 ? (
                   <div className="space-y-4">
                     {userCourses.map(course => (
                       <div key={course.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                        <h3 className="font-medium cursor-pointer">
+                        <h3 className="font-medium">
                           <Link to={`/courses/${course.id}`} className="text-blue-600 hover:underline">
                             {course.title}
                           </Link>
@@ -369,12 +416,24 @@ export default function Profile() {
                           <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
                             {course.category}
                           </span>
-                          <Button
-                            variant="destructive"
-                            onClick={() => handleDeleteCourse(course.id)}
-                          >
-                            Delete Course
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewItem(course.id, 'course')}
+                              className="flex items-center gap-1"
+                            >
+                              <Eye size={16} /> 
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteConfirmation(course.id, 'course')}
+                              className="flex items-center gap-1"
+                            >
+                              <Trash size={16} /> 
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -389,9 +448,97 @@ export default function Profile() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Toolkits Section */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Your Toolkits</CardTitle>
+                  <CardDescription>
+                    {userToolkits.length} toolkits created
+                  </CardDescription>
+                </div>
+                <Button onClick={() => navigate("/add-toolkit")}>
+                  Add New Toolkit
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {userToolkits.length > 0 ? (
+                  <div className="space-y-4">
+                    {userToolkits.map(toolkit => (
+                      <div key={toolkit.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                        <h3 className="font-medium">
+                          <Link to={`/toolkit/${toolkit.id}`} className="text-blue-600 hover:underline">
+                            {toolkit.title}
+                          </Link>
+                        </h3>
+                        <p className="text-sm text-gray-600 line-clamp-2">{toolkit.description}</p>
+                        <div className="flex justify-between items-center mt-2">
+                          <span className="text-xs text-gray-500">
+                            Created: {new Date(toolkit.createdAt?.seconds * 1000).toLocaleDateString()}
+                          </span>
+                          <span className="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded-full">
+                            {toolkit.category}
+                          </span>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewItem(toolkit.id, 'toolkit')}
+                              className="flex items-center gap-1"
+                            >
+                              <Eye size={16} /> View
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteConfirmation(toolkit.id, 'toolkit')}
+                              className="flex items-center gap-1"
+                            >
+                              <Trash size={16} /> Delete
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">You haven't created any toolkits yet</p>
+                    <Button className="mt-4" onClick={() => navigate("/add-toolkit")}>
+                      Create Your First Toolkit
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Confirm Deletion
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this {itemToDelete.type}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 py-3">
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button variant="destructive" onClick={handleDelete} className="flex items-center gap-1">
+              <Trash size={16} />
+              Delete {itemToDelete.type === 'course' ? 'Course' : 'Toolkit'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
