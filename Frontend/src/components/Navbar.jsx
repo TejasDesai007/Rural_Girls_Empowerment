@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { collection, query, where, getDocs, writeBatch, doc } from "firebase/firestore";
+import { collection, onSnapshot, query, where, getDocs, writeBatch, doc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import logo from "../assets/icons/logo.png";
 
@@ -29,7 +29,6 @@ const generateColorFromName = (name) => {
   return colors[index];
 };
 
-
 export default function MainNavbar() {
   const [user, setUser] = useState(null);
   const [variant, setVariant] = useState("guest");
@@ -42,6 +41,23 @@ export default function MainNavbar() {
   const navigate = useNavigate();
   const notificationRef = useRef(null);
   const exploreMenuRef = useRef(null);
+
+  useEffect(() => {
+    const q = query(
+      collection(db, "admin_notifications"),
+      where("read", "==", false)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const notifs = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setUnreadNotifications(notifs);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -441,9 +457,10 @@ export default function MainNavbar() {
                 <div className="relative">
                   <button
                     onClick={navigateToNotifications}
-                    className="p-2 text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white transition-colors duration-200 hover:scale-110 transform"
+                    className="p-2 text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white transition-colors duration-200 hover:scale-110 transform relative"
                     aria-label="Notifications"
                   >
+                    {/* Bell Icon */}
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="20"
@@ -459,11 +476,15 @@ export default function MainNavbar() {
                       <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                       <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
                     </svg>
+
+                    {/* 🔴 Badge Dot with Pulse */}
                     {unreadNotifications.length > 0 && (
-                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white animate-pulse">
+                      <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white font-semibold animate-bounce">
                         {unreadNotifications.length}
                       </span>
+
                     )}
+
                   </button>
                 </div>
 
