@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
 
 import { db, auth } from "../../firebase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Star, Plus, Minus, MessageSquare } from "lucide-react";
+import { Star, Plus, Minus, MessageSquare, AlertCircle } from "lucide-react";
 import "keen-slider/keen-slider.min.css";
 import { useKeenSlider } from "keen-slider/react";
 import { toast } from "react-hot-toast";
@@ -21,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const formatCloudinaryUrl = (url) => {
   if (!url) return null;
@@ -40,6 +42,8 @@ const ProductDetails = () => {
   const [userReview, setUserReview] = useState(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [isOwnProduct, setIsOwnProduct] = useState(false);
+  const navigate = useNavigate();
 
   // Calculate total amount
   const totalAmount = cartItems.reduce(
@@ -69,6 +73,8 @@ const ProductDetails = () => {
   useEffect(() => {
     if (currentUser && product) {
       checkUserReview(currentUser.uid);
+      // Check if current user is the seller of this product
+      setIsOwnProduct(currentUser.uid === product.sellerid);
     }
   }, [currentUser, product]);
 
@@ -102,10 +108,10 @@ const ProductDetails = () => {
   const checkUserReview = async (userId) => {
     try {
       if (!product || !product.reviews) return;
-      
+
       const userReview = product.reviews.find((r) => r.userId === userId);
       setUserReview(userReview || null);
-      
+
       if (userReview) {
         setRating(userReview.rating);
         setReview(userReview.comment);
@@ -140,16 +146,21 @@ const ProductDetails = () => {
         const imageUrls = data.imageUrls?.length
           ? data.imageUrls.map((url) => formatCloudinaryUrl(url))
           : [formatCloudinaryUrl(data.imageUrl)];
-        
+
         // Ensure rating is a number
         const numericRating = getNumericRating(data.rating);
-        
-        setProduct({ 
-          ...data, 
-          id: productSnap.id, 
+
+        setProduct({
+          ...data,
+          id: productSnap.id,
           imageUrls,
           rating: numericRating
         });
+        
+        // Check if current user is the seller
+        if (currentUser && data.sellerid === currentUser.uid) {
+          setIsOwnProduct(true);
+        }
       }
     } catch (error) {
       console.error("Error loading product: ", error);
@@ -176,6 +187,11 @@ const ProductDetails = () => {
   const addToCart = async () => {
     if (!currentUser) {
       toast.error("Please login to add items to cart");
+      return;
+    }
+    
+    if (isOwnProduct) {
+      toast.error("You cannot add your own product to the cart");
       return;
     }
 
@@ -234,6 +250,11 @@ const ProductDetails = () => {
       toast.error("Please login to submit a review");
       return;
     }
+    
+    if (isOwnProduct) {
+      toast.error("You cannot review your own product");
+      return;
+    }
 
     if (rating === 0) {
       toast.error("Please select a rating");
@@ -258,7 +279,7 @@ const ProductDetails = () => {
           reviews: arrayRemove(userReview),
         });
       }
-      
+
       // Then add the new/updated review
       await updateDoc(productRef, {
         reviews: arrayUnion(reviewData),
@@ -270,21 +291,21 @@ const ProductDetails = () => {
         const updatedProduct = productSnap.data();
         const reviews = updatedProduct.reviews || [];
         const avgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
-        
+
         // Store rating as a number
         const numericRating = parseFloat(avgRating.toFixed(1));
-        
+
         await updateDoc(productRef, {
           rating: numericRating
         });
-        
+
         // Update local product state with numeric rating
         setProduct({
           ...product,
           reviews,
           rating: numericRating
         });
-        
+
         // Update user review state
         setUserReview(reviewData);
       }
@@ -316,7 +337,33 @@ const ProductDetails = () => {
       toast.error("Please login to submit a review");
       return;
     }
+    
+    if (isOwnProduct) {
+      toast.error("You cannot review your own product");
+      return;
+    }
+    
     setIsReviewModalOpen(true);
+  };
+
+  const handleBuyNow = () => {
+    if (isOwnProduct) {
+      toast.error("You cannot purchase your own product");
+      return;
+    }
+    
+    navigate("/BuyNow", {
+      state: {
+        product: {
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          imageUrl: product.imageUrls?.[0] || product.imageUrl,
+          quantity,
+          subtotal: product.price * quantity,
+        },
+      },
+    });
   };
 
   if (loading) {
@@ -368,11 +415,10 @@ const ProductDetails = () => {
               {[...Array(5)].map((_, i) => (
                 <Star
                   key={i}
-                  className={`h-4 w-4 ${
-                    i < Math.floor(displayRating)
-                      ? "fill-yellow-400 text-yellow-400"
-                      : "text-gray-300"
-                  }`}
+                  className={`h-4 w-4 ${i < Math.floor(displayRating)
+                    ? "fill-yellow-400 text-yellow-400"
+                    : "text-gray-300"
+                    }`}
                 />
               ))}
               <span className="ml-2 text-sm text-gray-500">
@@ -380,7 +426,13 @@ const ProductDetails = () => {
               </span>
               <Dialog open={isReviewModalOpen} onOpenChange={setIsReviewModalOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="link" size="sm" className="ml-2" onClick={handleOpenReviewModal}>
+                  <Button 
+                    variant="link" 
+                    size="sm" 
+                    className="ml-2" 
+                    onClick={handleOpenReviewModal}
+                    disabled={isOwnProduct}
+                  >
                     <MessageSquare className="h-4 w-4 mr-1" />
                     {userReview ? "Edit Review" : "Add Review"}
                   </Button>
@@ -394,9 +446,8 @@ const ProductDetails = () => {
                       {[...Array(5)].map((_, i) => (
                         <Star
                           key={i}
-                          className={`h-8 w-8 cursor-pointer ${
-                            i < rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
-                          }`}
+                          className={`h-8 w-8 cursor-pointer ${i < rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+                            }`}
                           onClick={() => setRating(i + 1)}
                         />
                       ))}
@@ -418,8 +469,8 @@ const ProductDetails = () => {
                       >
                         Cancel
                       </Button>
-                      <Button 
-                        onClick={submitReview} 
+                      <Button
+                        onClick={submitReview}
                         disabled={reviewSubmitting}
                       >
                         {reviewSubmitting ? "Submitting..." : "Submit"}
@@ -436,6 +487,16 @@ const ProductDetails = () => {
               </Badge>
             </div>
 
+            {/* Display message if own product */}
+            {isOwnProduct && (
+              <Alert className="bg-yellow-50 border-yellow-200">
+                <AlertCircle className="h-4 w-4 text-yellow-600" />
+                <AlertDescription className="text-yellow-600">
+                  This is your own product. You cannot add it to cart or purchase it.
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* Quantity Selector */}
             <div className="flex items-center gap-4 mt-2">
               <div className="flex items-center border rounded-md">
@@ -443,7 +504,7 @@ const ProductDetails = () => {
                   variant="ghost"
                   size="sm"
                   onClick={decreaseQuantity}
-                  disabled={quantity <= 1}
+                  disabled={quantity <= 1 || isOwnProduct}
                   className="px-2"
                 >
                   <Minus className="h-4 w-4" />
@@ -453,7 +514,7 @@ const ProductDetails = () => {
                   variant="ghost"
                   size="sm"
                   onClick={increaseQuantity}
-                  disabled={quantity >= product.stock}
+                  disabled={quantity >= product.stock || isOwnProduct}
                   className="px-2"
                 >
                   <Plus className="h-4 w-4" />
@@ -476,11 +537,16 @@ const ProductDetails = () => {
               <Button
                 className="w-full sm:w-auto"
                 onClick={addToCart}
-                disabled={cartLoading || product.stock === 0}
+                disabled={cartLoading || product.stock === 0 || isOwnProduct}
               >
                 {cartLoading ? "Adding..." : "Add to Cart"}
               </Button>
-              <Button className="w-full sm:w-auto" variant="secondary">
+              <Button
+                className="w-full sm:w-auto"
+                variant="secondary"
+                onClick={handleBuyNow}
+                disabled={product.stock === 0 || isOwnProduct}
+              >
                 Buy Now
               </Button>
             </div>
@@ -525,9 +591,8 @@ const ProductDetails = () => {
                       {[...Array(5)].map((_, i) => (
                         <Star
                           key={i}
-                          className={`h-4 w-4 ${
-                            i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
-                          }`}
+                          className={`h-4 w-4 ${i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+                            }`}
                         />
                       ))}
                     </div>

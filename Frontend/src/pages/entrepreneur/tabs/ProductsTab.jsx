@@ -9,6 +9,7 @@ import { db, storage, auth } from "../../../firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { collection, addDoc, getDocs, doc, updateDoc, getDoc } from "firebase/firestore";
 import { v4 as uuidv4 } from 'uuid';
+import { onAuthStateChanged } from "firebase/auth";
 
 const ProductsTab = () => {
     const [products, setProducts] = useState([]);
@@ -22,9 +23,18 @@ const ProductsTab = () => {
     });
     const [imageFiles, setImageFiles] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [currentUser, setCurrentUser] = useState(null);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [editProductId, setEditProductId] = useState(null);
-
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            setCurrentUser(user);
+            if (user) {
+                
+            }
+        });
+        return () => unsubscribe();
+    }, []);
     // Fetch products from Firestore
     const handleEditClick = (product) => {
         setNewProduct({
@@ -32,6 +42,7 @@ const ProductsTab = () => {
             price: product.price,
             stock: product.stock,
             category: product.category,
+            sellerid: currentUser?.uid || "",
             description: product.description,
             imageUrls: product.imageUrls || []
         });
@@ -94,25 +105,25 @@ const ProductsTab = () => {
             // Get current user's phone number from Firebase
             const user = auth.currentUser;
             if (!user) throw new Error("User not authenticated");
-            
+
             const userDoc = await getDoc(doc(db, "users", user.uid));
             if (!userDoc.exists()) throw new Error("User document not found");
-            
+
             const userData = userDoc.data();
             const phoneNumber = userData.phoneNumber; // Assuming phoneNumber is stored in user document
-            
+
             if (!phoneNumber) throw new Error("Phone number not found for user");
-            
+
             // Create product link
             const productLink = `${window.location.origin}/product/${productId}`;
-            
+
             // Create message
             const message = `New Product Added!\n\n` +
-                           `*Name:* ${productName}\n` +
-                           `*Category:* ${category}\n` +
-                           `*Price:* ₹${price}\n\n` +
-                           `View product: ${productLink}`;
-            
+                `*Name:* ${productName}\n` +
+                `*Category:* ${category}\n` +
+                `*Price:* ₹${price}\n\n` +
+                `View product: ${productLink}`;
+
             // Send to backend
             const response = await fetch('/api/send-message', {
                 method: 'POST',
@@ -124,9 +135,9 @@ const ProductsTab = () => {
                     message: message
                 })
             });
-            
+
             if (!response.ok) throw new Error('Failed to send message');
-            
+
             return await response.json();
         } catch (error) {
             console.error("Error sending WhatsApp message:", error);
@@ -172,7 +183,7 @@ const ProductsTab = () => {
                     ...productData,
                     createdAt: new Date().toISOString()
                 });
-                
+
                 // Send WhatsApp message for new products only
                 try {
                     await sendWhatsAppMessage(
@@ -184,7 +195,7 @@ const ProductsTab = () => {
                 } catch (error) {
                     console.error("WhatsApp notification failed, but product was added", error);
                 }
-                
+
                 setProducts([...products, { id: docRef.id, ...productData }]);
             }
 

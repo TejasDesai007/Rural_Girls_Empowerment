@@ -8,7 +8,7 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-const ScheduleSection = ({ selectedMentor, menteeId, onBooked, onBack }) => {
+const ScheduleSection = ({ selectedMentor, menteeId, onBooked, onBack, isBooking: parentIsBooking }) => {
   const [date, setDate] = useState(() => {
     // Set initial date to tomorrow to avoid past dates
     const tomorrow = new Date();
@@ -20,8 +20,6 @@ const ScheduleSection = ({ selectedMentor, menteeId, onBooked, onBack }) => {
   const [isAvailable, setIsAvailable] = useState(true);
   const navigate = useNavigate();
   const [isBooking, setIsBooking] = useState(false);
-
-
 
   // Redirect to login if not logged in
   useEffect(() => {
@@ -40,16 +38,29 @@ const ScheduleSection = ({ selectedMentor, menteeId, onBooked, onBack }) => {
       try {
         const dateString = date.toLocaleDateString("en-CA"); // Ensure this is defined before the query
 
-        const q = query(
+        // Check both bookings and mentorship_requests collections for conflicts
+        const bookingsQuery = query(
+          collection(db, "bookings"),
+          where("mentorId", "==", selectedMentor.id),
+          where("date", "==", dateString),
+          where("timeSlot", "==", timeSlot),
+          where("status", "in", ["pending", "confirmed"])
+        );
+
+        const requestsQuery = query(
           collection(db, "mentorship_requests"),
           where("mentorId", "==", selectedMentor.id),
           where("date", "==", dateString),
           where("timeSlot", "==", timeSlot),
-          where("status", "==", "confirm")
+          where("status", "in", ["pending", "confirm"])
         );
 
-        const querySnapshot = await getDocs(q);
-        const available = querySnapshot.empty;
+        const [bookingsSnapshot, requestsSnapshot] = await Promise.all([
+          getDocs(bookingsQuery),
+          getDocs(requestsQuery)
+        ]);
+
+        const available = bookingsSnapshot.empty && requestsSnapshot.empty;
         setIsAvailable(available);
 
         if (!available) {
@@ -66,40 +77,43 @@ const ScheduleSection = ({ selectedMentor, menteeId, onBooked, onBack }) => {
       }
     };
 
-
     const debounceTimer = setTimeout(checkAvailability, 500);
     return () => clearTimeout(debounceTimer);
   }, [selectedMentor, date, timeSlot]);
-
-
 
   const handleBookSession = async () => {
     if (!timeSlot || !menteeId || !isAvailable) return;
 
     setIsBooking(true);
 
-    toast.promise(
-      async () => {
-        const bookingData = {
-          mentorId: selectedMentor.id,
-          menteeId,
-          date: date.toLocaleDateString("en-CA"),
-          timeSlot,
-          status: "pending",
-          mentorName: selectedMentor.name,
-          createdAt: new Date(),
-        };
+    try {
+      const bookingData = {
+        mentorId: selectedMentor.id,
+        menteeId,
+        date: date.toLocaleDateString("en-CA"),
+        timeSlot,
+        status: "pending",
+        mentorName: selectedMentor.name,
+        createdAt: new Date(),
+      };
 
-        await addDoc(collection(db, "mentorship_requests"), bookingData);
-
-        // Pass the booking data to the parent component
-        onBooked(bookingData);
-
-        return bookingData;
-      },
-      // Rest of your toast logic remains the same
-    ).finally(() => setIsBooking(false));
+      // Pass the booking data to the parent component for notification creation
+      // Instead of directly adding to mentorship_requests
+      onBooked(bookingData);
+      
+      toast.success(`Booking request sent to ${selectedMentor.name}!`, {
+        description: "You'll be notified when they respond."
+      });
+    } catch (error) {
+      console.error("Booking failed:", error);
+      toast.error("Failed to book session");
+    } finally {
+      setIsBooking(false);
+    }
   };
+
+  // Use parent's isBooking state if provided
+  const displayIsBooking = parentIsBooking !== undefined ? parentIsBooking : isBooking;
 
   return (
     <div className="mt-16">
@@ -132,7 +146,7 @@ const ScheduleSection = ({ selectedMentor, menteeId, onBooked, onBack }) => {
                   variant={timeSlot === slot ? "default" : "outline"}
                   onClick={() => setTimeSlot(slot)}
                   className="flex items-center gap-2"
-                  disabled={isCheckingAvailability}
+                  disabled={isCheckingAvailability || displayIsBooking}
                 >
                   <Clock size={16} />
                   {slot}
@@ -161,9 +175,9 @@ const ScheduleSection = ({ selectedMentor, menteeId, onBooked, onBack }) => {
             className="w-full"
             size="lg"
             onClick={handleBookSession}
-            disabled={!timeSlot || !isAvailable || isCheckingAvailability || isBooking}
+            disabled={!timeSlot || !isAvailable || isCheckingAvailability || displayIsBooking}
           >
-            {isBooking ? (
+            {displayIsBooking ? (
               <span className="flex items-center gap-2">
                 <Clock className="animate-spin" size={16} />
                 Booking...

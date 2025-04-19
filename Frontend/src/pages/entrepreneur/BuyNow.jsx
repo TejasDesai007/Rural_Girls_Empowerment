@@ -3,26 +3,43 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "react-hot-toast";
 import { db, auth } from "../../firebase";
-import { doc, addDoc, collection, updateDoc } from "firebase/firestore";
+import { doc, addDoc, collection, updateDoc, getDoc, runTransaction } from "firebase/firestore";
 
-const Checkout = () => {
+const BuyNow = () => {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const { items: cartItems = [], totalAmount: total = 0 } = location.state || {};
+    const state = location.state || {};
+    let cartItems = [];
+    let total = 0;
+
+    if (Array.isArray(state.items)) {
+        cartItems = state.items;
+        total = state.totalAmount || 0;
+    } else if (state.product) {
+        cartItems = [{
+            productId: state.product.id,
+            name: state.product.name,
+            price: state.product.price,
+            imageUrl: state.product.imageUrl,
+            quantity: state.product.quantity || 1,
+            subtotal: state.product.subtotal || state.product.price
+        }];
+        total = state.product.subtotal || state.product.price;
+    }
+
     const [address, setAddress] = useState('');
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
-    console.log(location.state);
+
     useEffect(() => {
-        if (!location.state || location.state.length === 0) {
+        if (!state.product && (!state.items || state.items.length === 0)) {
             toast.error("No items found for checkout");
-            // navigate('/');
+            navigate('/');
         }
 
-        // Load Razorpay script
         const script = document.createElement('script');
         script.src = 'https://checkout.razorpay.com/v1/checkout.js';
         script.async = true;
@@ -31,7 +48,7 @@ const Checkout = () => {
         return () => {
             document.body.removeChild(script);
         };
-    }, [location.state, navigate]);
+    }, [state, navigate]);
 
     useEffect(() => {
         if (auth.currentUser) {
@@ -60,6 +77,31 @@ const Checkout = () => {
         return true;
     };
 
+    const updateProductInventory = async (productId, quantityToSubtract) => {
+        const productRef = doc(db, "products", productId);
+
+        try {
+            await runTransaction(db, async (transaction) => {
+                const productDoc = await transaction.get(productRef);
+                if (!productDoc.exists()) {
+                    throw new Error("Product does not exist!");
+                }
+
+                const currentStock = productDoc.data().stock || 0;
+                if (currentStock < quantityToSubtract) {
+                    throw new Error(`Insufficient stock for ${productDoc.data().name}`);
+                }
+
+                transaction.update(productRef, {
+                    stock: currentStock - quantityToSubtract
+                });
+            });
+        } catch (error) {
+            console.error("Error updating product inventory:", error);
+            throw error;
+        }
+    };
+
     const saveOrder = async (paymentId, paymentStatus, orderStatus = "pending") => {
         try {
             const userId = auth.currentUser?.uid;
@@ -76,19 +118,19 @@ const Checkout = () => {
                 },
                 userId: userId || 'guest',
                 createdAt: new Date().toISOString(),
-                status: orderStatus // <- now dynamic
+                status: orderStatus
             };
 
             const ordersRef = collection(db, "orders");
             const orderRef = await addDoc(ordersRef, orderData);
-            if (userId) {
-                const cartRef = doc(db, "carts", userId);
-                await updateDoc(cartRef, {
-                    items: [],
-                    updatedAt: new Date().toISOString()
-                });
+
+            // Update inventory for each product in the order
+            for (const item of cartItems) {
+                await updateProductInventory(item.productId, item.quantity || 1);
             }
-            if (userId) {
+
+            // Only clear cart if it's a logged in user and we came from the cart
+            if (userId && Array.isArray(state.items)) {
                 const cartRef = doc(db, "carts", userId);
                 await updateDoc(cartRef, {
                     items: [],
@@ -103,37 +145,34 @@ const Checkout = () => {
         }
     };
 
-
     const handleRazorpayPayment = () => {
         if (!validateForm()) return;
 
         setIsProcessing(true);
 
         const options = {
-            key: "rzp_test_rS2pK6GHbnndos", // Replace with your Razorpay test key
+            key: "rzp_test_rS2pK6GHbnndos",
             amount: total * 100,
             currency: "INR",
             name: "Empower Her",
-            description: `Purchase of ${cartItems.length} items`,
+            description: `Purchase of ${cartItems.length} ${cartItems.length > 1 ? 'items' : 'item'}`,
             image: "https://your-logo-url.png",
             handler: async function (response) {
                 try {
                     const paymentId = response.razorpay_payment_id;
-
-                    // Pass "paid" status now
                     const orderId = await saveOrder(paymentId, "completed", "paid");
 
                     toast.success("Payment successful!");
-                    navigate('/Entrepreneurship', {
+                    navigate('/order-confirmation', {
                         state: {
                             orderId,
                             paymentId,
                             total,
-                            cartItems // <- Add product details to confirmation page
+                            cartItems
                         }
                     });
                 } catch (error) {
-                    toast.error("Error processing order");
+                    toast.error("Error processing order: " + error.message);
                     console.error("Order processing error:", error);
                 } finally {
                     setIsProcessing(false);
@@ -179,18 +218,19 @@ const Checkout = () => {
                 state: {
                     orderId,
                     paymentMethod: "Cash on Delivery",
-                    total
+                    total,
+                    cartItems
                 }
             });
         } catch (error) {
-            toast.error("Error processing order");
+            toast.error("Error processing order: " + error.message);
             console.error("Order processing error:", error);
         } finally {
             setIsProcessing(false);
         }
     };
 
-    if (!cartItems?.length) {
+    if (!cartItems.length) {
         return (
             <div className="text-center py-10 space-y-4">
                 <h2 className="text-xl font-semibold">Your cart is empty</h2>
@@ -230,7 +270,7 @@ const Checkout = () => {
             <div className="space-y-2">
                 <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span>₹{(total || 0).toFixed(2)}</span>
+                    <span>₹{total.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                     <span>Delivery</span>
@@ -238,7 +278,7 @@ const Checkout = () => {
                 </div>
                 <div className="flex justify-between font-bold text-lg pt-2 border-t">
                     <span>Total Amount</span>
-                    <span>₹{(total || 0).toFixed(2)}</span>
+                    <span>₹{total.toFixed(2)}</span>
                 </div>
             </div>
 
@@ -318,4 +358,4 @@ const Checkout = () => {
     );
 };
 
-export default Checkout;
+export default BuyNow;

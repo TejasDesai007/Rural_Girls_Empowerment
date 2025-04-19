@@ -1,5 +1,8 @@
 // src/App.jsx
 import React from "react";
+import { useEffect, useState } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "./firebase";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Courses from "./pages/Courses";
@@ -27,26 +30,59 @@ import ProductDetails from "./pages/entrepreneur/ProductsDetails";
 import Entrepreneurship from "./pages/entrepreneur/Entrepreneurship";
 import Checkout from "./pages/entrepreneur/Checkout";
 import PaymentMethodPage from "./pages/entrepreneur/PaymentMethod";
+import BuyNow from "./pages/entrepreneur/BuyNow";
 
 
 
 //Mentor imports
 import MentorNotification from "./pages/MentorNotification";
+import MentorRequests from "./pages/MentorRequests";
+
+//User imports
+import UserNotification from "./pages/UserNotification";
+
+//Google translate API widget
+import CustomTranslator from "./components/GoogleTranslateWidget";
 
 function App() {
+  const [variant, setVariant] = useState("guest");
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        const storedRole = sessionStorage.getItem("role");
+        if (storedRole === "admin") {
+          setVariant("admin");
+        } else if (storedRole === "mentor") {
+          setVariant("mentor");
+        } else {
+          setVariant("user");
+        }
+      } else {
+        setVariant("guest");
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+
   return (
     <Router>
-      <Navbar />
+      <CustomTranslator />
+      <Navbar variant={variant} />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/courses" element={<Courses />} />
         <Route path="/courses/:courseId" element={<CoursePlayer />} />
         <Route path="/mentor-match" element={<MentorMatch />} />
         <Route path="/testCloud" element={<DownloadFile />} />
+        <Route path="/BuyNow" element={<BuyNow />} />
 
 
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
+
 
         <Route path="/chat-assistant" element={<ChatAssistant />} />
 
@@ -72,6 +108,11 @@ function App() {
 
         {/* Notifications */}
         <Route path="/mentor-notification" element={<MentorNotification />} />
+        <Route path="/mentor-requests" element={<MentorRequests />} />
+
+        {/* User Routes */}
+        <Route path="/user-notification" element={<UserNotification />} />
+        
       </Routes>
     </Router>
   );

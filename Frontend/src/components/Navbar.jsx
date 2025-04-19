@@ -1,43 +1,184 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { Menu, ChevronDown } from "lucide-react";
+import { Menu, Bell, ChevronDown } from "lucide-react";
 import logo from "../assets/icons/logo.png";
-
 import { auth } from "../firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
+import { db } from "../firebase";
+import { collection, query, where, getDocs, writeBatch, doc, getDoc } from "firebase/firestore";
 
 export default function Navbar() {
   const [user, setUser] = useState(null);
+  const [variant, setVariant] = useState("guest");
+  const [unreadNotifications, setUnreadNotifications] = useState([]);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const navigate = useNavigate();
+  const notificationRef = useRef(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        const storedRole = sessionStorage.getItem("role") || "user";
-        const userData = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          role: storedRole,
-        };
-        setUser(userData);
-        sessionStorage.setItem("user", JSON.stringify(userData));
+        try {
+          // Fetch user role from database based on email
+          const userRole = await fetchUserRole(firebaseUser.email);
+          
+          const userData = {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+            role: userRole,
+          };
+          
+          setUser(userData);
+          setVariant(userRole);
+        } catch (error) {
+          console.error("Error fetching user role:", error);
+          // Default to "user" role if there's an error
+          setVariant("user");
+        }
       } else {
+        // Clear everything when logged out
         setUser(null);
-        sessionStorage.removeItem("user");
+        setVariant("guest");
+        setUnreadNotifications([]);
+        setIsNotificationOpen(false);
       }
     });
+
+    // Handle page reload - get data from session storage first
+    const storedUserJSON = sessionStorage.getItem("user");
+    const storedRole = sessionStorage.getItem("role");
+    
+    if (storedUserJSON && storedRole) {
+      try {
+        const storedUser = JSON.parse(storedUserJSON);
+        setUser(storedUser);
+        setVariant(storedRole);
+      } catch (error) {
+        console.error("Error parsing stored user:", error);
+        // Clear invalid data
+        sessionStorage.removeItem("user");
+        sessionStorage.removeItem("role");
+      }
+    }
 
     return () => unsubscribe();
   }, []);
 
+  // Function to fetch user role from database
+  const fetchUserRole = async (email) => {
+    try {
+      // First try to find the user in the 'users' collection
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, where("email", "==", email));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        // User found in users collection
+        const userData = querySnapshot.docs[0].data();
+        return userData.role || "user"; // Default to "user" if role is not specified
+      }
+      
+      // If not found in users collection, check admin collection
+      const adminsRef = collection(db, "admins");
+      const adminQuery = query(adminsRef, where("email", "==", email));
+      const adminSnapshot = await getDocs(adminQuery);
+      
+      if (!adminSnapshot.empty) {
+        return "admin";
+      }
+      
+      // If not found in admins, check mentors collection
+      const mentorsRef = collection(db, "mentors");
+      const mentorQuery = query(mentorsRef, where("email", "==", email));
+      const mentorSnapshot = await getDocs(mentorQuery);
+      
+      if (!mentorSnapshot.empty) {
+        return "mentor";
+      }
+      
+      // If no role is found in any collection, default to "user"
+      return "user";
+    } catch (error) {
+      console.error("Error fetching user role:", error);
+      return "user"; // Default role
+    }
+  };
+
+  const fetchUnreadNotifications = async () => {
+    if (!user || loadingNotifications) return;
+    setLoadingNotifications(true);
+
+    const notificationsRef = collection(db, "notifications");
+    const q = query(notificationsRef, where("userId", "==", user.uid), where("read", "==", false));
+
+    try {
+      const querySnapshot = await getDocs(q);
+      const unreadNotificationsData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      })).sort((a, b) => b.timestamp.seconds - a.timestamp.seconds);
+      setUnreadNotifications(unreadNotificationsData);
+    } catch (error) {
+      console.error("Error fetching notifications: ", error);
+    } finally {
+      setLoadingNotifications(false);
+    }
+  };
+
+  // Fetch notifications when user changes
+  useEffect(() => {
+    if (user) {
+      fetchUnreadNotifications();
+    }
+  }, [user]);
+
+  const handleNotificationToggle = () => {
+    const nextState = !isNotificationOpen;
+    setIsNotificationOpen(nextState);
+    if (nextState && user) {
+      fetchUnreadNotifications();
+    }
+  };
+
+  const markNotificationsAsRead = async () => {
+    if (!user || unreadNotifications.length === 0) return;
+
+    const batch = writeBatch(db);
+    unreadNotifications.forEach(notification => {
+      const notificationRef = doc(db, "notifications", notification.id);
+      batch.update(notificationRef, { read: true });
+    });
+
+    try {
+      await batch.commit();
+      setUnreadNotifications([]);
+    } catch (error) {
+      console.error("Error marking notifications as read: ", error);
+    }
+  };
+
+  // Function to navigate to the appropriate notification page based on user role
+  const navigateToNotifications = () => {
+    if (variant === "mentor" || variant === "admin") {
+      navigate("/mentor-notification");
+    } else {
+      navigate("/user-notification");
+    }
+    setIsNotificationOpen(false);
+  };
+
   const handleLogout = async () => {
     try {
+      // Sign out from Firebase
       await signOut(auth);
-      setUser(null);
+      
+      // Navigate to home page
       navigate("/");
     } catch (error) {
       console.error("Logout failed:", error);
@@ -106,61 +247,85 @@ export default function Navbar() {
           ))}
         </div>
 
-        {/* Auth Buttons */}
+        {/* Right-side buttons */}
         <div className="hidden md:flex items-center gap-4">
-          {!user ? (
+          {variant === "guest" ? (
             <>
               <Button variant="outline" onClick={() => navigate("/register")}>Register</Button>
               <Button onClick={() => navigate("/login")}>Login</Button>
             </>
           ) : (
             <>
-              <div className="text-sm text-gray-600 mr-2">
-                {user.displayName || user.email}
+              {/* Avatar */}
+              <div className="relative group">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate("/my-profile")}
+                  className="rounded-full bg-purple-100 h-8 w-8 flex items-center justify-center"
+                >
+                  <span className="text-purple-700 font-medium">
+                    {user?.displayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "U"}
+                  </span>
+                </Button>
+                <div className="absolute opacity-0 group-hover:opacity-100 z-10 -left-12 top-full mt-2 p-2 bg-white shadow-lg rounded-lg w-36 text-center text-sm transition-opacity">
+                  {user?.displayName || user?.email}
+                </div>
               </div>
-              <Button variant="outline" onClick={() => navigate("/dashboard")}>Dashboard</Button>
+
+              {/* Notification */}
+              <div className="relative" ref={notificationRef}>
+                <button onClick={handleNotificationToggle} className="relative p-1">
+                  <Bell className="h-6 w-6 text-gray-700 hover:text-purple-600" />
+                  {unreadNotifications.length > 0 && (
+                    <span className="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white"></span>
+                  )}
+                </button>
+                {isNotificationOpen && NotificationDropdown}
+              </div>
+
               <Button onClick={handleLogout} className="bg-red-500 hover:bg-red-600">Logout</Button>
             </>
           )}
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Navigation */}
         <div className="md:hidden">
           <Sheet>
-            <SheetTrigger>
-              <Menu className="h-6 w-6 text-gray-700 hover:text-purple-600" />
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Menu className="w-6 h-6" />
+              </Button>
             </SheetTrigger>
-            <SheetContent className="bg-white">
-              <div className="flex flex-col gap-4 mt-6">
-                <Link to="/" className="text-gray-800 hover:text-purple-600 font-medium">Home</Link>
-                <hr className="border-gray-300" />
-                <p className="text-sm font-semibold text-gray-500">Explore</p>
-                <Link to="/courses" className="text-gray-800 hover:text-purple-600">Courses</Link>
-                <Link to="/mentor-match" className="text-gray-800 hover:text-purple-600">Mentorship</Link>
-                <Link to="/toolkit" className="text-gray-800 hover:text-purple-600">Toolkits</Link>
-                <Link to="/chat-assistant" className="text-gray-800 hover:text-purple-600">Assistant</Link>
-                <Link to="/entrepreneur-toolkit" className="text-gray-800 hover:text-purple-600">Entrepreneur Tools</Link>
-                {currentLinks.map((link) => (
-                  <Link
-                    key={link.name}
-                    to={link.path}
-                    className="text-gray-800 hover:text-purple-600"
-                  >
-                    {link.name}
-                  </Link>
-                ))}
-                <hr className="border-gray-300" />
-                {!user ? (
-                  <>
-                    <Button variant="outline" onClick={() => navigate("/login")}>Login</Button>
-                    <Button onClick={() => navigate("/register")}>Register</Button>
-                  </>
-                ) : (
-                  <>
-                    <Button variant="outline" onClick={() => navigate("/dashboard")}>Dashboard</Button>
-                    <Button onClick={handleLogout} className="bg-red-500 hover:bg-red-600">Logout</Button>
-                  </>
+
+            <SheetContent side="left" className="w-[250px] sm:w-[300px]">
+              <div className="flex flex-col gap-4 py-6">
+                <Link to="/" className="text-lg font-semibold text-purple-700 hover:text-purple-900">
+                  EmpowerHer
+                </Link>
+
+                {user && (
+                  <div className="text-sm text-gray-500 font-medium">
+                    Role: {variant}
+                  </div>
                 )}
+
+               
+
+                <div className="border-t pt-4 mt-4 flex flex-col gap-3">
+                  {variant === "guest" ? (
+                    <>
+                      <Button variant="outline" onClick={() => navigate("/register")}>Register</Button>
+                      <Button onClick={() => navigate("/login")}>Login</Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button onClick={() => navigate("/my-profile")}>Profile</Button>
+                      <Button onClick={() => navigateToNotifications}>Notifications</Button>
+                      <Button onClick={handleLogout} variant="destructive">Logout</Button>
+                    </>
+                  )}
+                </div>
               </div>
             </SheetContent>
           </Sheet>
