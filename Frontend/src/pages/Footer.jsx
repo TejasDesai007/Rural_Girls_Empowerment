@@ -8,13 +8,6 @@ const Footer = () => {
         <a href="/privacy-terms" className="hover:underline">Privacy Policy</a>
       </div>
 
-      <div className="mt-4 flex justify-center">
-        <select className="border text-sm rounded px-2 py-1">
-          <option value="en">English</option>
-          <option value="hi">हिन्दी</option>
-        </select>
-      </div>
-
       <p className="mt-4 text-xs">Built in collaboration with Google by Team DevRangers</p>
       <p className="mt-1">© 2025 Rural Empower. All rights reserved.</p>
     </footer>
