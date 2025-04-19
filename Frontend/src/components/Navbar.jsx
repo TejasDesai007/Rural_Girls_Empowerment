@@ -185,174 +185,29 @@ export default function Navbar() {
     }
   };
 
-  const getLinksByVariant = () => {
-    // Common home link for all roles
-    const homeLink = { 
-      name: "Home", 
-      path: "/", 
-      type: "simple" 
-    };
-    
-    // Explore dropdown configuration - can customize per role
-    const exploreDropdown = {
-      name: "Explore",
-      type: "dropdown",
-      items: [
-        { name: "Courses", path: "/courses" },
-        { name: "Mentorship", path: "/mentor-match" },
-        { name: "Toolkits", path: "/toolkit" },
-        { name: "Assistant", path: "/chat-assistant" },
-        { name: "Entrepreneur Tools", path: "/entrepreneur-toolkit" }
-      ]
-    };
-    
-    // Base links available to all logged-in users (user role)
-    const userLinks = [
-      homeLink,
-      exploreDropdown,
-      // Add any other links for normal users here
-    ];
-    
-    // Links for mentors (includes all user links plus mentor-specific ones)
-    const mentorLinks = [
-      ...userLinks,
-      { name: "Add Course", path: "/addcourse", type: "simple" },
-      {name: "Requests", path: "/mentor-requests", type: "simple" },
-    ];
-    
-    // Links for admins
-    const adminLinks = [
-      { name: "Dashboard", path: "/admin-panel", type: "simple" },
-      exploreDropdown,
-      { name: "User Management", path: "/user-management", type: "simple" },
-      { name: "Add Course", path: "/addcourse", type: "simple" }
-      // Any other admin-specific links
-    ];
-    
-    // Guest links (for non-logged-in users)
-    const guestLinks = [
-      homeLink,
-      exploreDropdown
-    ];
-
-    switch (variant) {
-      case "admin":
-        return adminLinks;
-      case "mentor":
-        return mentorLinks;
-      case "user":
-        return userLinks;
-      default:
-        return guestLinks;
-    }
-  };
-
-  const roleLinks = getLinksByVariant();
-
-  // Helper component for Notifications (shared by desktop & mobile)
-  const NotificationDropdown = (
-    <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
-      <div className="p-3 font-semibold text-gray-700 border-b border-gray-200 text-sm">
-        Notifications
-      </div>
-      {loadingNotifications ? (
-        <div className="p-4 text-center text-gray-500">Loading...</div>
-      ) : unreadNotifications.length > 0 ? (
-        <>
-          <div className="max-h-72 overflow-y-auto">
-            {unreadNotifications.map((notif) => (
-              <div key={notif.id} className="p-3 border-b border-gray-100 hover:bg-gray-50">
-                <p className="text-sm text-gray-800">{notif.message}</p>
-                <p className="text-xs text-gray-400 mt-1">{new Date(notif.timestamp.seconds * 1000).toLocaleString()}</p>
-              </div>
-            ))}
-          </div>
-          <div className="p-2 border-t border-gray-200 flex justify-between items-center">
-            <Button variant="link" size="sm" onClick={markNotificationsAsRead} disabled={unreadNotifications.length === 0}>
-              Mark all as read
-            </Button>
-            <Button variant="link" size="sm" onClick={navigateToNotifications}>
-              See All
-            </Button>
-          </div>
-        </>
-      ) : (
-        <div className="p-4 text-center text-gray-500 text-sm">
-          No unread notifications.
-          <div className="mt-2">
-            <Button variant="outline" size="sm" className="w-full" onClick={navigateToNotifications}>
-              See All Notifications
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  // Render link based on its type (simple link or dropdown)
-  const renderNavLink = (link) => {
-    if (link.type === "simple") {
-      return (
-        <Link 
-          key={link.name} 
-          to={link.path} 
-          className="text-gray-700 hover:text-purple-600 font-medium text-sm"
-        >
-          {link.name}
-        </Link>
-      );
-    } else if (link.type === "dropdown") {
-      return (
-        <DropdownMenu key={link.name}>
-          <DropdownMenuTrigger className="flex items-center gap-1 text-gray-700 hover:text-purple-600 font-medium text-sm outline-none focus:ring-0">
-            {link.name}
-            <ChevronDown className="w-4 h-4 mt-0.5" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            {link.items.map((item) => (
-              <DropdownMenuItem key={item.name} asChild>
-                <Link to={item.path}>{item.name}</Link>
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    }
-    return null;
-  };
-
-  // Render mobile nav link based on its type
-  const renderMobileNavLink = (link) => {
-    if (link.type === "simple") {
-      return (
-        <Link 
-          key={link.name} 
-          to={link.path} 
-          className="text-gray-700 hover:text-purple-600"
-        >
-          {link.name}
-        </Link>
-      );
-    } else if (link.type === "dropdown") {
-      return (
-        <div key={link.name} className="space-y-2">
-          <div className="text-sm text-gray-600 font-semibold">{link.name}</div>
-          <div className="flex flex-col gap-2 ml-2">
-            {link.items.map((item) => (
-              <Link 
-                key={item.name} 
-                to={item.path} 
-                className="text-gray-700 hover:text-purple-600"
-              >
-                {item.name}
-              </Link>
-            ))}
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
+  const currentLinks = {
+    guest: [],
+    user: [
+      { name: "Dashboard", path: "/user-dashboard" },
+      { name: "My Profile", path: "/my-profile" },
+      { name: "Notifications", path: "/user-notification" },
+    ],
+    mentor: [
+      { name: "Dashboard", path: "/mentor-dashboard" },
+      { name: "Add Course", path: "/addcourse" },
+      { name: "My Profile", path: "/my-profile" },
+      { name: "notification", path: "/mentor-notification" },
+      { name: "Add ToolKits", path: "/addtoolkit" },
+    ],
+    admin: [
+      { name: "Dashboard", path: "/admin-panel" },
+      { name: "User Management", path: "/user-management" },
+      { name: "Add Course", path: "/addcourse" },
+      { name: "My Profile", path: "/my-profile" },
+      { name: "Notifications", path: "/notification" },
+      { name: "Add ToolKits", path: "/addtoolkit" },
+    ],
+  }[user?.role || "guest"];
 
   return (
     <nav className="w-full sticky top-0 z-50 bg-white shadow-md border-b border-gray-200">
@@ -367,7 +222,31 @@ export default function Navbar() {
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-6">
-          {roleLinks.map(link => renderNavLink(link))}
+          <Link to="/" className="text-gray-700 hover:text-purple-600 font-medium text-sm">Home</Link>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center gap-1 text-gray-700 hover:text-purple-600 font-medium text-sm">
+              Explore
+              <ChevronDown className="w-4 h-4 mt-0.5" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem asChild><Link to="/courses">Courses</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/mentor-match">Mentorship</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/toolkit">Toolkits</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/chat-assistant">Assistant</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/Entrepreneurship">Entrepreneur Tools</Link></DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {currentLinks.map((link) => (
+            <Link
+              key={link.name}
+              to={link.path}
+              className="text-gray-700 hover:text-purple-600 font-medium text-sm"
+            >
+              {link.name}
+            </Link>
+          ))}
         </div>
 
         {/* Right-side buttons */}
@@ -433,9 +312,7 @@ export default function Navbar() {
                   </div>
                 )}
 
-                <div className="flex flex-col gap-4">
-                  {roleLinks.map(link => renderMobileNavLink(link))}
-                </div>
+               
 
                 <div className="border-t pt-4 mt-4 flex flex-col gap-3">
                   {variant === "guest" ? (
