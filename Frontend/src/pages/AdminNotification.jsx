@@ -24,12 +24,15 @@ import {
     Trash2,
     CheckCircle,
     Bell,
+    Sparkles
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { motion, AnimatePresence } from "framer-motion";
 
 const AdminNotification = () => {
     const [notifications, setNotifications] = useState([]);
     const [selectedNotification, setSelectedNotification] = useState(null);
+    const [showConfirmDelete, setShowConfirmDelete] = useState(null);
 
     useEffect(() => {
         const q = query(collection(db, "admin_notifications"), orderBy("createdAt", "desc"));
@@ -59,7 +62,9 @@ const AdminNotification = () => {
     const handleMarkAsRead = async (id) => {
         try {
             await updateDoc(doc(db, "admin_notifications", id), { read: true });
-            toast.success("Marked as read");
+            toast.success("Marked as read", {
+                icon: <CheckCircle className="w-4 h-4 text-green-500" />,
+            });
         } catch (err) {
             toast.error("Failed to mark as read");
         }
@@ -68,99 +73,206 @@ const AdminNotification = () => {
     const handleDelete = async (id) => {
         try {
             await deleteDoc(doc(db, "admin_notifications", id));
-            toast.success("Deleted");
+            setShowConfirmDelete(null);
+            toast.success("Notification deleted", {
+                icon: <Sparkles className="w-4 h-4 text-pink-500" />,
+            });
         } catch (err) {
             toast.error("Failed to delete");
         }
     };
 
+    // Animation variants
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        show: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1
+            }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { y: 20, opacity: 0 },
+        show: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 100 } }
+    };
+
     return (
-        <div className="max-w-3xl mx-auto p-4">
-            <Toaster position="top-right" richColors />
-            <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold">Admin Notifications</h2>
-                <Badge variant="outline" className="bg-orange-50 text-orange-600 border-orange-200">
-                    <Bell className="w-4 h-4 mr-1" />
-                    {notifications.filter(n => !n.read).length} Unread
-                </Badge>
-            </div>
-
-            {notifications.length > 0 ? (
-                notifications.map(n => (
-                    <Card key={n.id} className={`border ${n.read ? "bg-gray-50" : "bg-white border-l-4 border-l-orange-500"}`}>
-                        <CardContent className="p-3">
-                            <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                    <h3 className="text-sm font-medium">{n.title}</h3>
-                                    <p className="text-xs text-gray-500 mt-1">{formatDate(n.createdAt)}</p>
-                                </div>
-                                <div className="flex gap-1">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setSelectedNotification(n)}
-                                        title="View Details"
-                                        className="h-7 w-7 p-0"
-                                    >
-                                        <Eye className="w-4 h-4 text-gray-500" />
-                                    </Button>
-
-                                    {!n.read && (
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => handleMarkAsRead(n.id)}
-                                            title="Mark as Read"
-                                            className="h-7 w-7 p-0"
-                                        >
-                                            <CheckCircle className="w-4 h-4 text-green-500" />
-                                        </Button>
-                                    )}
-
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleDelete(n.id)}
-                                        title="Delete"
-                                        className="h-7 w-7 p-0"
-                                    >
-                                        <Trash2 className="w-4 h-4 text-red-500" />
-                                    </Button>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))
-            ) : (
-                <div className="text-center py-10 border rounded-lg bg-gray-50">
-                    <Bell className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-                    <p className="text-gray-500">No admin notifications</p>
-                </div>
-            )}
-
-            {selectedNotification && (
-                <Dialog open={true} onOpenChange={() => setSelectedNotification(null)}>
-                    <DialogContent className="max-w-md">
-                        <DialogHeader>
-                            <DialogTitle>{selectedNotification.title}</DialogTitle>
-                            <p className="text-xs text-gray-500">{formatDate(selectedNotification.createdAt)}</p>
-                        </DialogHeader>
-                        <div className="text-sm text-gray-700 border-t pt-3 mt-2">
-                            {selectedNotification.description}
+        <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 py-8">
+            <div className="max-w-3xl mx-auto p-6 bg-white bg-opacity-90 rounded-2xl shadow-lg backdrop-blur-sm">
+                <Toaster position="top-right" richColors />
+                
+                <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
+                    <div className="flex items-center gap-2">
+                        <div className="bg-gradient-to-r from-pink-300 to-purple-400 p-2 rounded-full">
+                            <Bell className="w-6 h-6 text-white" />
                         </div>
-                        {selectedNotification.additionalData && (
-                            <div className="mt-4 border-t pt-2 text-sm text-gray-600 space-y-1">
-                                {Object.entries(selectedNotification.additionalData).map(([key, value]) => (
-                                    <p key={key}><strong>{key}:</strong> {value}</p>
-                                ))}
+                        <h2 className="text-2xl font-semibold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
+                            Admin Notifications
+                        </h2>
+                    </div>
+
+                    <Badge variant="outline" className="bg-gradient-to-r from-pink-100 to-purple-100 text-purple-600 border-purple-200 px-3 py-1.5 rounded-full shadow-sm">
+                        <Bell className="w-4 h-4 mr-2 text-pink-500" />
+                        {notifications.filter(n => !n.read).length} Unread
+                    </Badge>
+                </div>
+
+                <AnimatePresence>
+                    {notifications.length > 0 ? (
+                        <motion.div 
+                            className="space-y-3"
+                            variants={containerVariants}
+                            initial="hidden"
+                            animate="show"
+                        >
+                            {notifications.map(n => (
+                                <motion.div 
+                                    key={n.id} 
+                                    layout
+                                    variants={itemVariants}
+                                    initial="hidden"
+                                    animate="show"
+                                    exit={{ opacity: 0, scale: 0.8 }}
+                                >
+                                    <Card className={`border overflow-hidden transition-all duration-300 hover:shadow-md ${
+                                        n.read 
+                                        ? "bg-gradient-to-r from-gray-50 to-white" 
+                                        : "bg-gradient-to-r from-pink-50 to-purple-50 border-l-4 border-l-pink-400"
+                                    }`}>
+                                        <CardContent className="p-4">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex-1">
+                                                    <h3 className={`text-sm font-medium ${!n.read ? "text-purple-700" : ""}`}>
+                                                        {n.title}
+                                                    </h3>
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        {formatDate(n.createdAt)}
+                                                    </p>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => setSelectedNotification(n)}
+                                                        title="View Details"
+                                                        className="h-8 w-8 p-0 rounded-full hover:bg-pink-100 hover:text-pink-600 transition-colors"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </Button>
+
+                                                    {!n.read && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => handleMarkAsRead(n.id)}
+                                                            title="Mark as Read"
+                                                            className="h-8 w-8 p-0 rounded-full hover:bg-green-100 hover:text-green-600 transition-colors"
+                                                        >
+                                                            <CheckCircle className="w-4 h-4" />
+                                                        </Button>
+                                                    )}
+
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => setShowConfirmDelete(n.id)}
+                                                        title="Delete"
+                                                        className="h-8 w-8 p-0 rounded-full hover:bg-red-100 hover:text-red-600 transition-colors"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </motion.div>
+                            ))}
+                        </motion.div>
+                    ) : (
+                        <motion.div 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5 }}
+                            className="text-center py-16 border rounded-2xl bg-gradient-to-r from-pink-50 to-purple-50"
+                        >
+                            <div className="bg-white bg-opacity-60 p-4 rounded-full inline-flex items-center justify-center mb-4">
+                                <Bell className="w-12 h-12 text-pink-300" />
                             </div>
-                        )}
-                        <DialogFooter>
-                            <Button onClick={() => setSelectedNotification(null)}>Close</Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-            )}
+                            <p className="text-purple-500 font-medium">No notifications yet</p>
+                            <p className="text-gray-500 text-sm mt-2">When you receive notifications, they'll appear here</p>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Notification detail modal */}
+                {selectedNotification && (
+                    <Dialog open={true} onOpenChange={() => setSelectedNotification(null)}>
+                        <DialogContent className="max-w-md bg-gradient-to-br from-white to-pink-50 p-0 overflow-hidden">
+                            <DialogHeader className="p-6 pb-2 bg-gradient-to-r from-pink-200 to-purple-200 bg-opacity-30">
+                                <DialogTitle className="text-lg font-medium text-purple-800">
+                                    {selectedNotification.title}
+                                </DialogTitle>
+                                <p className="text-xs text-pink-600">{formatDate(selectedNotification.createdAt)}</p>
+                            </DialogHeader>
+                            <div className="p-6">
+                                <div className="text-sm text-gray-700 pt-2">
+                                    {selectedNotification.description}
+                                </div>
+                                {selectedNotification.additionalData && (
+                                    <div className="mt-6 pt-4 border-t border-pink-100 text-sm text-gray-600 space-y-2">
+                                        <h4 className="font-medium text-pink-600 mb-2">Additional Information</h4>
+                                        {Object.entries(selectedNotification.additionalData).map(([key, value]) => (
+                                            <p key={key} className="flex">
+                                                <span className="font-medium text-purple-700 mr-2">{key}:</span> 
+                                                <span>{value}</span>
+                                            </p>
+                                        ))}
+                                    </div>
+                                )}
+                                <DialogFooter className="mt-6 pt-4 border-t border-pink-100">
+                                    <Button 
+                                        onClick={() => setSelectedNotification(null)}
+                                        className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white"
+                                    >
+                                        Close
+                                    </Button>
+                                </DialogFooter>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+                )}
+
+                {/* Confirm delete dialog */}
+                {showConfirmDelete && (
+                    <Dialog open={true} onOpenChange={() => setShowConfirmDelete(null)}>
+                        <DialogContent className="max-w-xs">
+                            <DialogHeader>
+                                <DialogTitle className="text-center">Delete Notification?</DialogTitle>
+                            </DialogHeader>
+                            <div className="text-center text-sm text-gray-600 mt-2">
+                                This action cannot be undone.
+                            </div>
+                            <DialogFooter className="flex gap-2 mt-4 justify-center">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setShowConfirmDelete(null)}
+                                    className="border-pink-200 text-pink-600 hover:bg-pink-50"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    onClick={() => handleDelete(showConfirmDelete)}
+                                    className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white"
+                                >
+                                    Delete
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                )}
+            </div>
         </div>
     );
 };

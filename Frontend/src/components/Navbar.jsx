@@ -334,7 +334,7 @@ export default function MainNavbar() {
           },
           {
             name: "Add Toolkits",
-            link: "/addtoolkit",
+            link: "/add-toolkit",
           },
         ];
       case "admin":
@@ -358,7 +358,7 @@ export default function MainNavbar() {
           },
           {
             name: "Add Toolkits",
-            link: "/addtoolkit",
+            link: "/add-toolkit",
           },
         ];
       default:
