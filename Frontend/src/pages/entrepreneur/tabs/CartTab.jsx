@@ -8,6 +8,7 @@ import { Trash2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
+import { setDoc } from "firebase/firestore";
 
 const CartTab = () => {
     const [cartItems, setCartItems] = useState([]);
@@ -29,11 +30,28 @@ const CartTab = () => {
         try {
             const cartRef = doc(db, "carts", userId);
             const cartSnap = await getDoc(cartRef);
+
             if (cartSnap.exists()) {
-                setCartItems(cartSnap.data().items || []);
+                const items = cartSnap.data().items || [];
+                setCartItems(items.map(item => ({
+                    ...item,
+                    productId: item.productId || Math.random().toString(36).substring(2, 9),
+                    price: item.price || 0,
+                    quantity: item.quantity || 1,
+                    name: item.name || "Unnamed Product",
+                    imageUrl: item.imageUrl || ""
+                })));
+            } else {
+                // Cart doesn't exist yet — create it
+                await setDoc(cartRef, {
+                    items: [],
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                });
+                setCartItems([]);
             }
         } catch (error) {
-            console.error("Error fetching cart items:", error);
+            console.error("Error fetching or creating cart:", error);
             toast.error("Failed to load cart");
         } finally {
             setLoading(false);
@@ -86,6 +104,26 @@ const CartTab = () => {
             console.error("Error updating quantity:", error);
             toast.error("Failed to update quantity");
         }
+    };
+    const handleCheckout = () => {
+        // Create a deep copy of cartItems to prevent reference issues
+        const checkoutItems = JSON.parse(JSON.stringify(cartItems));
+        const total = calculateTotal();
+
+        // Validate items before proceeding
+        if (checkoutItems.length === 0) {
+            toast.error("Your cart is empty");
+            return;
+        }
+
+        navigate("/checkout", {
+            state: {
+                items: checkoutItems,
+                totalAmount: total,
+                // Add timestamp to ensure state is fresh
+                timestamp: Date.now()
+            }
+        });
     };
 
     const calculateTotal = () => {
@@ -187,12 +225,8 @@ const CartTab = () => {
                     </div>
                     <Button
                         className="w-full mt-4"
-                        onClick={() => navigate("/checkout", {
-                            state: {
-                                items: cartItems,
-                                totalAmount: calculateTotal(),
-                            }
-                        })}
+                        onClick={handleCheckout}
+                        disabled={cartItems.length === 0}
                     >
                         Proceed to Checkout
                     </Button>

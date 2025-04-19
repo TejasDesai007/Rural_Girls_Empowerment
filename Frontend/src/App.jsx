@@ -26,6 +26,8 @@ import ProductDetails from "./pages/entrepreneur/ProductsDetails";
 
 import Entrepreneurship from "./pages/entrepreneur/Entrepreneurship";
 import Checkout from "./pages/entrepreneur/Checkout";
+import PaymentMethodPage from "./pages/entrepreneur/PaymentMethod";
+
 
 
 //Mentor imports
@@ -56,6 +58,8 @@ function App() {
         <Route path="/Entrepreneurship" element={<Entrepreneurship />} />
         <Route path="/products/:id" element={<ProductDetails />} />
         <Route path="/checkout" element={<Checkout />} />
+        <Route path="/payment-method" element={<PaymentMethodPage />} />
+        
 
 
 
