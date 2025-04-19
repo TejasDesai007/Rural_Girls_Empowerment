@@ -91,7 +91,7 @@ export default function Navbar() {
               <DropdownMenuItem asChild><Link to="/mentor-match">Mentorship</Link></DropdownMenuItem>
               <DropdownMenuItem asChild><Link to="/toolkit">Toolkits</Link></DropdownMenuItem>
               <DropdownMenuItem asChild><Link to="/chat-assistant">Assistant</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link to="/entrepreneur-toolkit">Entrepreneur Tools</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/Entrepreneurship">Entrepreneur Tools</Link></DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
