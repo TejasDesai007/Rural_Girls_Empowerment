@@ -12,16 +12,17 @@ const chatRoutes = require("./routes/chatRoutes"); // Import the chat route
 const app = express();
 const PORT = 5000;
 
-// Middleware
+// ✅ Allow multiple localhost ports (e.g., 5173, 5174) during development
 app.use(
   cors({
+    origin: ["http://localhost:5173", "http://localhost:5174"],
     credentials: true,
-    origin: "http://localhost:5173",
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
+// Body parser middleware
 app.use(bodyParser.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
@@ -35,11 +36,12 @@ app.use(
   })
 );
 
-// Routes setup
+// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
-app.use("/api/chat", chatRoutes); // Add chat route
+app.use("/api/chat", chatRoutes); // Chat route
 
+// Start server
 app.listen(PORT, () => {
-  console.log(`Server is running at http://localhost:${PORT}`);
+  console.log(`🚀 Server is running at http://localhost:${PORT}`);
 });

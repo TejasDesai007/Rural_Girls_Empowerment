@@ -1,5 +1,6 @@
 const fetch = require("node-fetch");
-const GEMINI_API_KEY = "AIzaSyDp7-P2v_9vWOX5XS1DZC6_RofD-j_QO9Q";  
+const GEMINI_API_KEY = "AIzaSyDp7-P2v_9vWOX5XS1DZC6_RofD-j_QO9Q";
+
 const generateContent = async (prompt) => {
   const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";  
   const headers = {
@@ -19,6 +20,9 @@ const generateContent = async (prompt) => {
 
     const data = await response.json();
 
+    // ✅ ADD THIS LINE for debugging response
+    console.log("Gemini API Response:", JSON.stringify(data, null, 2));
+
     if (data && data.candidates && data.candidates.length > 0) {
       return data.candidates[0].content.parts[0].text;
     } else {
@@ -26,7 +30,7 @@ const generateContent = async (prompt) => {
     }
   } catch (error) {
     console.error("Gemini API Error:", error);
-    throw error;  // Propagate the error to be handled in the controller
+    throw error;
   }
 };
 
