@@ -206,7 +206,8 @@ export default function Navbar() {
     // Links for mentors (includes all user links plus mentor-specific ones)
     const mentorLinks = [
       ...userLinks,
-      { name: "Add Course", path: "/addcourse", type: "simple" }
+      { name: "Add Course", path: "/addcourse", type: "simple" },
+      {name: "Requests", path: "/mentor-requests", type: "simple" },
     ];
     
     // Links for admins
