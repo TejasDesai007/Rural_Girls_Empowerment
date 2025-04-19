@@ -32,6 +32,10 @@ import Entrepreneurship from "./pages/entrepreneur/Entrepreneurship";
 
 //Mentor imports
 import MentorNotification from "./pages/MentorNotification";
+import MentorRequests from "./pages/MentorRequests";
+
+//User imports
+import UserNotification from "./pages/UserNotification";
 
 function App() {
   const [variant, setVariant] = useState("guest");
@@ -88,8 +92,13 @@ function App() {
         <Route path="/addcourse" element={<AddCourse />} />
         <Route path="/add-toolkit" element={<AddToolkit />} />
 
-        {/* Notifications */}
+        {/* Mentor Routes */}
         <Route path="/mentor-notification" element={<MentorNotification />} />
+        <Route path="/mentor-requests" element={<MentorRequests />} />
+
+        {/* User Routes */}
+        <Route path="/user-notification" element={<UserNotification />} />
+        
       </Routes>
     </Router>
   );
