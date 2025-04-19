@@ -10,6 +10,7 @@ import ProductsTab from "./tabs/ProductsTab";
 import OrdersTab from "./tabs/OrdersTab";
 import MarketplaceTab from "./tabs/MarketplaceTab";
 import CartTab from "./tabs/CartTab"; // Add this import
+import MySellsTab from "./tabs/SellsTab";
 
 const EntrepreneurDashboard = () => {
     const [activeTab, setActiveTab] = useState("dashboard");
@@ -33,6 +34,7 @@ const EntrepreneurDashboard = () => {
                 <TabsList>
                     <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
                     <TabsTrigger value="products">My Products</TabsTrigger>
+                    <TabsTrigger value="sells">My Sells</TabsTrigger>
                     <TabsTrigger value="orders">Orders</TabsTrigger>
                     <TabsTrigger value="cart">Cart</TabsTrigger> {/* Add this tab */}
                     <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
@@ -45,6 +47,10 @@ const EntrepreneurDashboard = () => {
 
                 <TabsContent value="products">
                     <ProductsTab />
+                </TabsContent>
+
+                <TabsContent value="sells">
+                    <MySellsTab />
                 </TabsContent>
 
                 <TabsContent value="orders">

@@ -47,7 +47,7 @@ const CartTab = () => {
 
             const cartRef = doc(db, "carts", userId);
             const cartSnap = await getDoc(cartRef);
-            
+
             if (cartSnap.exists()) {
                 const itemToRemove = cartSnap.data().items.find(item => item.productId === productId);
                 if (itemToRemove) {
@@ -67,16 +67,16 @@ const CartTab = () => {
 
     const updateQuantity = async (productId, newQuantity) => {
         if (newQuantity < 1) return;
-        
+
         try {
             const userId = auth.currentUser?.uid;
             if (!userId) return;
 
             const cartRef = doc(db, "carts", userId);
-            const updatedItems = cartItems.map(item => 
+            const updatedItems = cartItems.map(item =>
                 item.productId === productId ? { ...item, quantity: newQuantity } : item
             );
-            
+
             await updateDoc(cartRef, {
                 items: updatedItems,
                 updatedAt: new Date().toISOString()
@@ -127,8 +127,8 @@ const CartTab = () => {
                         <TableRow key={item.productId}>
                             <TableCell className="font-medium">
                                 <div className="flex items-center gap-3">
-                                    <img 
-                                        src={item.imageUrl} 
+                                    <img
+                                        src={item.imageUrl}
                                         alt={item.name}
                                         className="w-12 h-12 object-cover rounded"
                                     />
@@ -138,17 +138,17 @@ const CartTab = () => {
                             <TableCell>₹{item.price.toFixed(2)}</TableCell>
                             <TableCell>
                                 <div className="flex items-center gap-2">
-                                    <Button 
-                                        size="sm" 
-                                        variant="outline" 
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
                                         onClick={() => updateQuantity(item.productId, item.quantity - 1)}
                                         disabled={item.quantity <= 1}
                                     >
                                         -
                                     </Button>
                                     <span>{item.quantity}</span>
-                                    <Button 
-                                        size="sm" 
+                                    <Button
+                                        size="sm"
                                         variant="outline"
                                         onClick={() => updateQuantity(item.productId, item.quantity + 1)}
                                     >
@@ -158,8 +158,8 @@ const CartTab = () => {
                             </TableCell>
                             <TableCell>₹{(item.price * item.quantity).toFixed(2)}</TableCell>
                             <TableCell>
-                                <Button 
-                                    variant="ghost" 
+                                <Button
+                                    variant="ghost"
                                     size="sm"
                                     onClick={() => removeFromCart(item.productId)}
                                 >
@@ -185,9 +185,18 @@ const CartTab = () => {
                         <span>Total:</span>
                         <span>₹{calculateTotal().toFixed(2)}</span>
                     </div>
-                    <Button className="w-full mt-4" onClick={() => navigate("/checkout")}>
+                    <Button
+                        className="w-full mt-4"
+                        onClick={() => navigate("/checkout", {
+                            state: {
+                                items: cartItems,
+                                totalAmount: calculateTotal(),
+                            }
+                        })}
+                    >
                         Proceed to Checkout
                     </Button>
+
                 </div>
             </div>
         </div>

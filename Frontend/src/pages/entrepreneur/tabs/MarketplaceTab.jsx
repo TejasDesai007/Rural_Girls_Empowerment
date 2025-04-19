@@ -86,8 +86,7 @@ const MarketplaceTab = () => {
                         <div className="space-y-4">
                             {[...Array(5)].map((_, i) => (
                                 <div key={i} className="flex gap-4">
-                                    <Skeleton className="h-5 w-1/4" />
-                                    <Skeleton className="h-5 w-1/6" />
+                                    <Skeleton className="h-5 w-1/3" />
                                     <Skeleton className="h-5 w-1/6" />
                                     <Skeleton className="h-5 w-1/6" />
                                     <Skeleton className="h-5 w-1/6" />
@@ -108,9 +107,8 @@ const MarketplaceTab = () => {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Product</TableHead>
-                                    <TableHead>Views</TableHead>
-                                    <TableHead>Orders</TableHead>
-                                    <TableHead>Conversion</TableHead>
+                                    <TableHead>Price</TableHead>
+                                    <TableHead>Stocks</TableHead>
                                     <TableHead>Rating</TableHead>
                                     <TableHead>Action</TableHead>
                                 </TableRow>
@@ -119,9 +117,8 @@ const MarketplaceTab = () => {
                                 {filteredProducts.map((product) => (
                                     <TableRow key={product.id}>
                                         <TableCell>{product.name}</TableCell>
-                                        <TableCell>{product.views || 0}</TableCell>
-                                        <TableCell>{product.orders || 0}</TableCell>
-                                        <TableCell>{product.conversion ? `${product.conversion}%` : "0%"}</TableCell>
+                                        <TableCell>₹{product.price || 0}</TableCell>
+                                        <TableCell>{product.stock || 0}</TableCell>
                                         <TableCell>{product.rating ? `${product.rating} ★` : "0 ★"}</TableCell>
                                         <TableCell>
                                             <button
