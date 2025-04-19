@@ -24,6 +24,17 @@ const MentorMatch = () => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setMenteeId(user.uid);
+        // Check if user has a role stored in sessionStorage
+        const storedRole = sessionStorage.getItem("role");
+        if (!storedRole || storedRole === "guest") {
+          // If no role or guest role, redirect to login
+          toast.error("Please login to access mentor matching");
+          navigate("/login", { state: { returnUrl: location.pathname } });
+        }
+      } else {
+        // User is not logged in, redirect to login page
+        toast.error("Please login to access mentor matching");
+        navigate("/login", { state: { returnUrl: location.pathname } });
       }
     });
 
@@ -42,7 +53,7 @@ const MentorMatch = () => {
     fetchMentors();
 
     return () => unsubscribe();
-  }, []);
+  }, [navigate, location.pathname]);
 
   // Handle redirect from login with mentorId
   useEffect(() => {
@@ -69,19 +80,19 @@ const MentorMatch = () => {
       toast.error("Missing mentor or mentee information");
       return;
     }
-    
+
     setIsBooking(true);
-    
+
     try {
       // Get mentee details
       const auth = getAuth();
       const mentee = auth.currentUser;
       const menteeName = mentee?.displayName || "A mentee";
-      
+
       // Format the date for better readability
       const bookingDate = bookingData?.date || new Date().toLocaleDateString("en-CA");
       const timeSlot = bookingData?.timeSlot || "unspecified time";
-      
+
       // Create notification with detailed information
       const notificationRef = await addDoc(collection(db, "notifications"), {
         title: "🔔 New Mentor Request",
@@ -98,7 +109,7 @@ const MentorMatch = () => {
           mentorName: selectedMentor.name
         }
       });
-      
+
       // Also add a booking record
       await addDoc(collection(db, "bookings"), {
         mentorId: selectedMentor.id,
@@ -111,14 +122,14 @@ const MentorMatch = () => {
         createdAt: new Date(),
         notificationId: notificationRef.id
       });
-      
+
       // Set success message with mentor's name
       setSuccessMessage(`Request sent to ${selectedMentor.name}!`);
       setShowSuccess(true);
-      
+
       // Show toast as well
       toast.success(`Booking request sent to ${selectedMentor.name}!`);
-      
+
       // Reset selection after successful booking
       setSelectedMentor(null);
     } catch (error) {
@@ -142,7 +153,7 @@ const MentorMatch = () => {
               <h3 className="text-xl font-bold mb-2">Request Sent Successfully!</h3>
               <p className="text-gray-600 mb-4">{successMessage}</p>
               <p className="text-gray-500 text-sm">You'll be notified when they respond.</p>
-              <button 
+              <button
                 className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                 onClick={() => setShowSuccess(false)}
               >
@@ -152,7 +163,7 @@ const MentorMatch = () => {
           </div>
         </div>
       )}
-      
+
       <HeroBanner />
       <section className="max-w-6xl mx-auto px-4 py-12">
         {!selectedMentor ? (
@@ -170,7 +181,7 @@ const MentorMatch = () => {
           />
         )}
       </section>
-      
+
       {/* Add CSS for animations */}
       <style jsx global>{`
         @keyframes fadeInUp {
