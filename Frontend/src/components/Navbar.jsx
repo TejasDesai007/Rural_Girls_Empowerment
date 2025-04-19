@@ -1,40 +1,36 @@
+"use client";
+
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { Menu, Bell, ChevronDown } from "lucide-react";
-import logo from "../assets/icons/logo.png";
-import { auth } from "../firebase";
+import { Link, useNavigate } from "react-router-dom";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { db } from "../firebase";
-import { collection, query, where, getDocs, writeBatch, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, writeBatch, doc } from "firebase/firestore";
+import { auth, db } from "../firebase";
+import logo from "../assets/icons/logo.png";
 
+import {
+  Navbar,
+  NavBody,
+  NavItems,
+  MobileNav,
+  NavbarLogo,
+  NavbarButton,
+  MobileNavHeader,
+  MobileNavToggle,
+  MobileNavMenu,
+} from "@/components/ui/resizable-navbar";
 
-function MobileNavLink({ to, label }) {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const isActive = location.pathname === to;
-
-  return (
-    <Button
-      variant={isActive ? "default" : "ghost"}
-      onClick={() => navigate(to)}
-      className="justify-start"
-    >
-      {label}
-    </Button>
-  );
-}
-
-export default function Navbar() {
+export default function MainNavbar() {
   const [user, setUser] = useState(null);
   const [variant, setVariant] = useState("guest");
   const [unreadNotifications, setUnreadNotifications] = useState([]);
-  const [loadingNotifications, setLoadingNotifications] = useState(false);
+  const [loadingNotifications, setIsLoadingNotifications] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isExploreOpen, setIsExploreOpen] = useState(false);
+  
   const navigate = useNavigate();
   const notificationRef = useRef(null);
+  const exploreMenuRef = useRef(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -42,7 +38,7 @@ export default function Navbar() {
         try {
           // Fetch user role from database based on email
           const userRole = await fetchUserRole(firebaseUser.email);
-
+          
           const userData = {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
@@ -50,9 +46,13 @@ export default function Navbar() {
             photoURL: firebaseUser.photoURL,
             role: userRole,
           };
-
+          
           setUser(userData);
           setVariant(userRole);
+          
+          // Store user data in session storage for page reloads
+          sessionStorage.setItem("user", JSON.stringify(userData));
+          sessionStorage.setItem("role", userRole);
         } catch (error) {
           console.error("Error fetching user role:", error);
           // Default to "user" role if there's an error
@@ -64,13 +64,17 @@ export default function Navbar() {
         setVariant("guest");
         setUnreadNotifications([]);
         setIsNotificationOpen(false);
+        
+        // Clear session storage
+        sessionStorage.removeItem("user");
+        sessionStorage.removeItem("role");
       }
     });
 
     // Handle page reload - get data from session storage first
     const storedUserJSON = sessionStorage.getItem("user");
     const storedRole = sessionStorage.getItem("role");
-
+    
     if (storedUserJSON && storedRole) {
       try {
         const storedUser = JSON.parse(storedUserJSON);
@@ -84,7 +88,18 @@ export default function Navbar() {
       }
     }
 
-    return () => unsubscribe();
+    // Close dropdown on click outside
+    const handleClickOutside = (event) => {
+      if (exploreMenuRef.current && !exploreMenuRef.current.contains(event.target)) {
+        setIsExploreOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      unsubscribe();
+    };
   }, []);
 
   // Function to fetch user role from database
@@ -94,31 +109,31 @@ export default function Navbar() {
       const usersRef = collection(db, "users");
       const q = query(usersRef, where("email", "==", email));
       const querySnapshot = await getDocs(q);
-
+      
       if (!querySnapshot.empty) {
         // User found in users collection
         const userData = querySnapshot.docs[0].data();
         return userData.role || "user"; // Default to "user" if role is not specified
       }
-
+      
       // If not found in users collection, check admin collection
       const adminsRef = collection(db, "admins");
       const adminQuery = query(adminsRef, where("email", "==", email));
       const adminSnapshot = await getDocs(adminQuery);
-
+      
       if (!adminSnapshot.empty) {
         return "admin";
       }
-
+      
       // If not found in admins, check mentors collection
       const mentorsRef = collection(db, "mentors");
       const mentorQuery = query(mentorsRef, where("email", "==", email));
       const mentorSnapshot = await getDocs(mentorQuery);
-
+      
       if (!mentorSnapshot.empty) {
         return "mentor";
       }
-
+      
       // If no role is found in any collection, default to "user"
       return "user";
     } catch (error) {
@@ -129,7 +144,7 @@ export default function Navbar() {
 
   const fetchUnreadNotifications = async () => {
     if (!user || loadingNotifications) return;
-    setLoadingNotifications(true);
+    setIsLoadingNotifications(true);
 
     const notificationsRef = collection(db, "notifications");
     const q = query(notificationsRef, where("userId", "==", user.uid), where("read", "==", false));
@@ -144,7 +159,7 @@ export default function Navbar() {
     } catch (error) {
       console.error("Error fetching notifications: ", error);
     } finally {
-      setLoadingNotifications(false);
+      setIsLoadingNotifications(false);
     }
   };
 
@@ -154,14 +169,6 @@ export default function Navbar() {
       fetchUnreadNotifications();
     }
   }, [user]);
-
-  const handleNotificationToggle = () => {
-    const nextState = !isNotificationOpen;
-    setIsNotificationOpen(nextState);
-    if (nextState && user) {
-      fetchUnreadNotifications();
-    }
-  };
 
   const markNotificationsAsRead = async () => {
     if (!user || unreadNotifications.length === 0) return;
@@ -182,11 +189,7 @@ export default function Navbar() {
 
   // Function to navigate to the appropriate notification page based on user role
   const navigateToNotifications = () => {
-    if (variant === "mentor" || variant === "admin") {
-      navigate("/mentor-notification");
-    } else {
-      navigate("/user-notification");
-    }
+    navigate("/notification");
     setIsNotificationOpen(false);
   };
 
@@ -194,7 +197,7 @@ export default function Navbar() {
     try {
       // Sign out from Firebase
       await signOut(auth);
-
+      
       // Navigate to home page
       navigate("/");
     } catch (error) {
@@ -202,163 +205,430 @@ export default function Navbar() {
     }
   };
 
-  const currentLinks = {
-    guest: [],
-    user: [
-      { name: "My Profile", path: "/my-profile" },
-      { name: "Notifications", path: "/notification" },
-    ],
-    mentor: [
-      { name: "Add Course", path: "/addcourse" },
-      { name: "My Profile", path: "/my-profile" },
-      { name: "Notifications", path: "/notification" },
-      { name: "Add ToolKits", path: "/addtoolkit" },
-    ],
-    admin: [
-      { name: "Dashboard", path: "/admin-panel" },
-      { name: "User Management", path: "/user-management" },
-      { name: "Add Course", path: "/addcourse" },
-      { name: "My Profile", path: "/my-profile" },
-      { name: "Notifications", path: "/notification" },
-      { name: "Add ToolKits", path: "/addtoolkit" },
-    ],
-  }[user?.role || "guest"];
+  // Define navigation items based on role
+  const getNavItems = () => {
+    const exploreItems = [
+      {
+        name: "Courses",
+        link: "/courses",
+      },
+      {
+        name: "Mentorship",
+        link: "/mentor-match",
+      },
+      {
+        name: "Toolkits",
+        link: "/toolkit",
+      },
+      {
+        name: "AI Assistant",
+        link: "/chat-assistant",
+      },
+      {
+        name: "Entrepreneur Tools",
+        link: "/Entrepreneurship",
+      },
+    ];
+    
+    // Role-specific navigation items
+    switch (variant) {
+      case "user":
+        return [
+          {
+            name: "User Dashboard",
+            link: "/user-dashboard",
+          },
+          {
+            name: "Explore",
+            dropdown: true,
+            items: exploreItems,
+          },
+        ];
+      case "mentor":
+        return [
+          {
+            name: "Dashboard",
+            link: "/mentor-dashboard",
+          },
+          {
+            name: "Explore",
+            dropdown: true,
+            items: exploreItems,
+          },
+          {
+            name: "Add Toolkits",
+            link: "/addtoolkit",
+          },
+        ];
+      case "admin":
+        return [
+          {
+            name: "Admin Dashboard",
+            link: "/admin-panel",
+          },
+          {
+            name: "Explore",
+            dropdown: true,
+            items: exploreItems,
+          },
+          {
+            name: "User Management",
+            link: "/user-management",
+          },
+          {
+            name: "Add Course",
+            link: "/addcourse",
+          },
+          {
+            name: "Add Toolkits",
+            link: "/addtoolkit",
+          },
+        ];
+      default:
+        return [
+          {
+            name: "Home",
+            link: "/",
+          },
+          {
+            name: "Courses",
+            link: "/courses",
+          },
+          {
+            name: "Mentorship",
+            link: "/mentor-match",
+          },
+          {
+            name: "Toolkits",
+            link: "/toolkit",
+          },
+          {
+            name: "AI Assistant",
+            link: "/chat-assistant",
+          },
+          {
+            name: "Entrepreneur Tools",
+            link: "/Entrepreneurship",
+          },
+        ];
+    }
+  };
+
+  const navItems = getNavItems();
+
+  // Custom logo component that matches the pasted navbar design
+  const CustomNavbarLogo = () => (
+    <div className="flex items-center space-x-2 transition-transform duration-300 hover:scale-105">
+      <img src={logo} alt="Logo" className="h-8 w-8 rounded-full" />
+      <span className="text-lg font-bold tracking-wide text-neutral-800 dark:text-white">
+        EmpowerHer
+      </span>
+    </div>
+  );
 
   return (
-    <nav className="w-full sticky top-0 z-50 bg-white shadow-md border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex justify-between items-center">
-        {/* Logo */}
-        <Link to="/" className="flex items-center space-x-2">
-          <img src={logo} alt="Logo" className="h-10 w-10 rounded-full animate-pulse" />
-          <span className="text-xl font-bold tracking-wide text-purple-700 hover:text-purple-900 transition-all">
-            EmpowerHer
-          </span>
-        </Link>
-
-        {/* Desktop Nav */}
-        <div className="hidden md:flex items-center gap-6">
-          <Link to="/" className="text-gray-700 hover:text-purple-600 font-medium text-sm">Home</Link>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1 text-gray-700 hover:text-purple-600 font-medium text-sm">
-              Explore
-              <ChevronDown className="w-4 h-4 mt-0.5" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem asChild><Link to="/courses">Courses</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link to="/mentor-match">Mentorship</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link to="/toolkit">Toolkits</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link to="/chat-assistant">Assistant</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link to="/Entrepreneurship">Entrepreneur Tools</Link></DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {currentLinks.map((link) => (
-            <Link
-              key={link.name}
-              to={link.path}
-              className="text-gray-700 hover:text-purple-600 font-medium text-sm"
-            >
-              {link.name}
+    <div className="relative w-full">
+      <Navbar>
+        {/* Desktop Navigation */}
+        <NavBody>
+          <NavbarLogo>
+            <Link to="/" className="outline-none">
+              <CustomNavbarLogo />
             </Link>
-          ))}
-        </div>
+          </NavbarLogo>
 
-        {/* Right-side buttons */}
-        <div className="hidden md:flex items-center gap-4">
-          {variant === "guest" ? (
-            <>
-              <Button variant="outline" onClick={() => navigate("/register")}>Register</Button>
-              <Button onClick={() => navigate("/login")}>Login</Button>
-            </>
-          ) : (
-            <>
-              {/* Avatar */}
-              <div className="relative group">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => navigate("/my-profile")}
-                  className="rounded-full bg-purple-100 h-8 w-8 flex items-center justify-center"
-                >
-                  <span className="text-purple-700 font-medium">
-                    {user?.displayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "U"}
-                  </span>
-                </Button>
-                <div className="absolute opacity-0 group-hover:opacity-100 z-10 -left-12 top-full mt-2 p-2 bg-white shadow-lg rounded-lg w-36 text-center text-sm transition-opacity">
-                  {user?.displayName || user?.email}
-                </div>
-              </div>
-
-              {/* Notification */}
-              <div className="relative" ref={notificationRef}>
-                <button onClick={handleNotificationToggle} className="relative p-1">
-                  <Bell className="h-6 w-6 text-gray-700 hover:text-purple-600" />
-                  {unreadNotifications.length > 0 && (
-                    <span className="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white"></span>
+          {/* Custom navigation with dropdown support */}
+          <div className="hidden md:flex items-center gap-6">
+            {navItems.map((item, idx) => (
+              item.dropdown ? (
+                <div key={`dropdown-${idx}`} className="relative" ref={exploreMenuRef}>
+                  <button 
+                    onClick={() => setIsExploreOpen(!isExploreOpen)}
+                    className="flex items-center space-x-1 text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white transition-colors duration-200 font-medium relative group"
+                  >
+                    <span>{item.name}</span>
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      width="16" 
+                      height="16" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                      className={`transition-transform duration-300 ${isExploreOpen ? 'rotate-180' : ''}`}
+                    >
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-neutral-900 dark:bg-white group-hover:w-full transition-all duration-300 ease-in-out"></span>
+                  </button>
+                  {isExploreOpen && (
+                    <div className="absolute top-full left-0 mt-2 w-48 rounded-md bg-white dark:bg-neutral-800 shadow-lg z-50 animate-fadeIn">
+                      <div className="py-1">
+                        {item.items.map((subItem, subIdx) => (
+                          <Link
+                            key={`submenu-${subIdx}`}
+                            to={subItem.link}
+                            onClick={() => setIsExploreOpen(false)}
+                            className="block px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors duration-200 relative overflow-hidden group"
+                          >
+                            <span className="relative z-10">{subItem.name}</span>
+                            <span className="absolute inset-0 bg-neutral-200 dark:bg-neutral-600 transform translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-in-out"></span>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
                   )}
-                </button>
-                {isNotificationOpen && NotificationDropdown}
-              </div>
+                </div>
+              ) : (
+                <Link
+                  key={`desktop-link-${idx}`}
+                  to={item.link}
+                  className="text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white transition-colors duration-200 font-medium relative group"
+                >
+                  <span>{item.name}</span>
+                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-neutral-900 dark:bg-white group-hover:w-full transition-all duration-300 ease-in-out"></span>
+                </Link>
+              )
+            ))}
+          </div>
 
-              <Button onClick={handleLogout} className="bg-red-500 hover:bg-red-600">Logout</Button>
-            </>
-          )}
-        </div>
+          <div className="flex items-center gap-4">
+            {variant === "guest" ? (
+              <>
+                <NavbarButton 
+                  variant="secondary" 
+                  onClick={() => navigate("/register")}
+                  className="transition-all duration-300 ease-in-out hover:shadow-md hover:-translate-y-0.5"
+                >
+                  Register
+                </NavbarButton>
+                <NavbarButton 
+                  variant="primary" 
+                  onClick={() => navigate("/login")}
+                  className="transition-all duration-300 ease-in-out hover:shadow-md hover:-translate-y-0.5"
+                >
+                  Login
+                </NavbarButton>
+              </>
+            ) : (
+              <>
+                {/* Notification Bell Icon */}
+                <div className="relative">
+                  <button 
+                    onClick={navigateToNotifications}
+                    className="p-2 text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white transition-colors duration-200 hover:scale-110 transform"
+                    aria-label="Notifications"
+                  >
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      width="20" 
+                      height="20" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                      className="transition-transform duration-300 ease-in-out hover:rotate-12"
+                    >
+                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                      <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    {unreadNotifications.length > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white animate-pulse">
+                        {unreadNotifications.length}
+                      </span>
+                    )}
+                  </button>
+                </div>
+                
+                {/* Profile Icon */}
+                <NavbarButton 
+                  variant="secondary" 
+                  onClick={() => navigate("/my-profile")}
+                  className="transition-all duration-300 ease-in-out hover:shadow-md hover:-translate-y-0.5"
+                >
+                  <div className="flex items-center gap-2">
+                    {user?.photoURL ? (
+                      <img 
+                        src={user.photoURL} 
+                        alt="Profile" 
+                        className="h-6 w-6 rounded-full ring-2 ring-transparent hover:ring-blue-500 transition-all duration-300"
+                      />
+                    ) : (
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        width="18" 
+                        height="18" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        strokeWidth="2" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round"
+                      >
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                      </svg>
+                    )}
+                    <span>{user?.displayName || user?.email?.split('@')[0] || "Profile"}</span>
+                  </div>
+                </NavbarButton>
+                
+                <NavbarButton 
+                  variant="primary" 
+                  onClick={handleLogout}
+                  className="transition-all duration-300 ease-in-out hover:shadow-md hover:-translate-y-0.5"
+                >
+                  Logout
+                </NavbarButton>
+              </>
+            )}
+          </div>
+        </NavBody>
 
         {/* Mobile Navigation */}
-        <div className="md:hidden">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="w-6 h-6" />
-              </Button>
-            </SheetTrigger>
+        <MobileNav>
+          <MobileNavHeader>
+            <NavbarLogo>
+              <Link to="/" className="outline-none">
+                <CustomNavbarLogo />
+              </Link>
+            </NavbarLogo>
+            <MobileNavToggle
+              isOpen={isMobileMenuOpen}
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="transition-transform duration-300"
+            />
+          </MobileNavHeader>
 
-            <SheetContent side="left" className="w-[250px] sm:w-[300px]">
-              <div className="flex flex-col gap-4 py-6 px-4 h-full justify-between">
-                <div>
-                  {/* App Logo / Title */}
-                  <Link to="/" className="text-xl font-bold text-purple-700 hover:text-purple-900">
-                    EmpowerHer
-                  </Link>
-
-                  {/* Show role if logged in */}
-                  {user && (
-                    <div className="text-sm text-gray-500 mt-1">Role: <span className="font-medium">{variant}</span></div>
+          <MobileNavMenu 
+            isOpen={isMobileMenuOpen} 
+            onClose={() => setIsMobileMenuOpen(false)}
+            className={`transition-all duration-300 ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0'}`}
+          >
+            {/* Flatten all menu items for mobile */}
+            {navItems.flatMap((item, idx) => 
+              item.dropdown
+                ? [
+                    <div key={`mobile-dropdown-${idx}`} className="px-4 py-2 text-sm font-medium text-neutral-900 dark:text-white">
+                      {item.name}
+                    </div>,
+                    ...item.items.map((subItem, subIdx) => (
+                      <Link
+                        key={`mobile-submenu-${idx}-${subIdx}`}
+                        to={subItem.link}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block px-8 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors duration-200"
+                      >
+                        {subItem.name}
+                      </Link>
+                    ))
+                  ]
+                : [
+                    <Link
+                      key={`mobile-link-${idx}`}
+                      to={item.link}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block px-4 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors duration-200"
+                    >
+                      {item.name}
+                    </Link>
+                  ]
+            )}
+            
+            {variant !== "guest" && (
+              <Link
+                to="/notification"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="relative block px-4 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors duration-200"
+              >
+                <div className="flex items-center">
+                  <span>Notifications</span>
+                  {unreadNotifications.length > 0 && (
+                    <span className="ml-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white animate-pulse">
+                      {unreadNotifications.length}
+                    </span>
                   )}
-
-                  {/* Navigation Links */}
-                  <nav className="mt-6 flex flex-col gap-2">
-                    <MobileNavLink to="/" label="Home" />
-                    <MobileNavLink to="/courses" label="Courses" />
-                    <MobileNavLink to="/toolkit" label="Toolkit" />
-                    <MobileNavLink to="/mentor-match" label="Mentor Match" />
-                    <MobileNavLink to="/career" label="Career" />
-                  </nav>
                 </div>
+              </Link>
+            )}
+            
+            <div className="flex w-full flex-col gap-4 px-4 py-2">
+              {variant === "guest" ? (
+                <>
+                  <NavbarButton
+                    onClick={() => {
+                      navigate("/register");
+                      setIsMobileMenuOpen(false);
+                    }}
+                    variant="secondary"
+                    className="w-full transition-all duration-300 ease-in-out hover:shadow-md active:scale-95"
+                  >
+                    Register
+                  </NavbarButton>
+                  <NavbarButton
+                    onClick={() => {
+                      navigate("/login");
+                      setIsMobileMenuOpen(false);
+                    }}
+                    variant="primary"
+                    className="w-full transition-all duration-300 ease-in-out hover:shadow-md active:scale-95"
+                  >
+                    Login
+                  </NavbarButton>
+                </>
+              ) : (
+                <>
+                  <NavbarButton
+                    onClick={() => {
+                      navigate("/my-profile");
+                      setIsMobileMenuOpen(false);
+                    }}
+                    variant="secondary"
+                    className="w-full transition-all duration-300 ease-in-out hover:shadow-md active:scale-95"
+                  >
+                    My Profile
+                  </NavbarButton>
+                  <NavbarButton
+                    onClick={() => {
+                      handleLogout();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    variant="primary"
+                    className="w-full transition-all duration-300 ease-in-out hover:shadow-md active:scale-95"
+                  >
+                    Logout
+                  </NavbarButton>
+                </>
+              )}
+            </div>
+          </MobileNavMenu>
+        </MobileNav>
+      </Navbar>
 
-                {/* Auth Actions */}
-                <div className="border-t pt-4 mt-4 flex flex-col gap-2">
-                  {variant === "guest" ? (
-                    <>
-                      <Button variant="outline" onClick={() => navigate("/register")}>Register</Button>
-                      <Button onClick={() => navigate("/login")}>Login</Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button onClick={() => navigate("/my-profile")}>My Profile</Button>
-                      <Button onClick={() => navigate(getNotificationPath(variant))}>Notifications</Button>
-                      <Button onClick={handleLogout} variant="destructive">Logout</Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
-
-      </div>
-    </nav>
+      {/* Add global styles for animations */}
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out forwards;
+        }
+        
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
+        }
+        
+        .animate-pulse {
+          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+      `}</style>
+    </div>
   );
 }
