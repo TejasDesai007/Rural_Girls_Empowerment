@@ -33,9 +33,15 @@ import Entrepreneurship from "./pages/entrepreneur/Entrepreneurship";
 //Mentor imports
 import MentorNotification from "./pages/MentorNotification";
 import MentorRequests from "./pages/MentorRequests";
+import MentorDashboard from "./pages/MentorDashboard";
 
 //User imports
 import UserNotification from "./pages/UserNotification";
+import UserDashboard from "./pages/UserDashboard";
+
+
+//Career import
+import CareerPage from "./pages/CareerPage";
 
 //Google translate API widget
 import CustomTranslator from "./components/GoogleTranslateWidget";
@@ -99,10 +105,16 @@ function App() {
         {/* Mentor Routes */}
         <Route path="/mentor-notification" element={<MentorNotification />} />
         <Route path="/mentor-requests" element={<MentorRequests />} />
+        <Route path="/mentor-dashboard" element={<MentorDashboard />} />
 
         {/* User Routes */}
         <Route path="/user-notification" element={<UserNotification />} />
+        <Route path="/user-dashboard" element={<UserDashboard />} />
+
+        {/* Career Routes */}
+        <Route path="/career" element={<CareerPage />} />
         
+      
       </Routes>
     </Router>
   );

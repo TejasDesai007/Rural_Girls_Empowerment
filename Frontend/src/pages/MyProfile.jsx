@@ -14,7 +14,20 @@ import { getAuth, onAuthStateChanged, updateProfile } from "firebase/auth";
 import { toast } from "react-hot-toast";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2, Trash, Eye, AlertTriangle } from "lucide-react";
+import { 
+  Loader2, 
+  Trash, 
+  Eye, 
+  AlertTriangle, 
+  PlusCircle, 
+  BookOpen,
+  Briefcase,
+  Edit,
+  Save,
+  X,
+  Plus,
+  Pencil
+} from "lucide-react";
 import { getFirestore, collection, query, where, getDocs, doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
@@ -218,7 +231,7 @@ export default function Profile() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+        <Loader2 className="h-12 w-12 animate-spin text-purple-500" />
       </div>
     );
   }
@@ -288,12 +301,18 @@ export default function Profile() {
 
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button className="w-full">Edit Profile</Button>
+                  <Button className="w-full flex items-center justify-center gap-2">
+                    <Pencil size={16} />
+                    {/* Edit Profile */}
+                  </Button>
                 </DialogTrigger>
 
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Edit Profile</DialogTitle>
+                    <DialogTitle className="flex items-center gap-2">
+                      <Edit size={18} />
+                      Edit Profile
+                    </DialogTitle>
                     <DialogDescription>
                       Update your profile information
                     </DialogDescription>
@@ -344,7 +363,9 @@ export default function Profile() {
                           type="button"
                           onClick={handleAddSkill}
                           disabled={!newSkill.trim()}
+                          className="flex items-center gap-1"
                         >
+                          <Plus size={16} />
                           Add
                         </Button>
                       </div>
@@ -357,7 +378,7 @@ export default function Profile() {
                               onClick={() => handleRemoveSkill(skill)}
                               className="ml-2 text-gray-500 hover:text-red-500"
                             >
-                              ×
+                              <X size={14} />
                             </button>
                           </div>
                         ))}
@@ -367,13 +388,18 @@ export default function Profile() {
 
                   <DialogFooter>
                     <DialogClose asChild>
-                      <Button variant="outline">Cancel</Button>
+                      <Button variant="outline" className="flex items-center gap-1">
+                        <X size={16} />
+                        Cancel
+                      </Button>
                     </DialogClose>
                     <Button
                       onClick={handleSaveProfile}
                       disabled={editing}
+                      className="flex items-center gap-1"
                     >
-                      {editing ? <Loader2 className="animate-spin" /> : "Save Changes"}
+                      {editing ? <Loader2 className="animate-spin h-4 w-4" /> : <Save size={16} />}
+                      {editing ? "Saving..." : "Save Changes"}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -388,14 +414,18 @@ export default function Profile() {
             {/* Courses Section */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Your Courses</CardTitle>
-                  <CardDescription>
-                    {userCourses.length} courses created
-                  </CardDescription>
+                <div className="flex items-center gap-2">
+                  <BookOpen size={20} className="text-blue-600" />
+                  <div>
+                    <CardTitle>Your Courses</CardTitle>
+                    <CardDescription>
+                      {userCourses.length} courses created
+                    </CardDescription>
+                  </div>
                 </div>
-                <Button onClick={() => navigate("/addcourse")}>
-                  Add New Course
+                <Button onClick={() => navigate("/addcourse")} className="flex items-center gap-1">
+                  <PlusCircle size={16} />
+                  {/* Add Course */}
                 </Button>
               </CardHeader>
               <CardContent>
@@ -423,7 +453,7 @@ export default function Profile() {
                               onClick={() => handleViewItem(course.id, 'course')}
                               className="flex items-center gap-1"
                             >
-                              <Eye size={16} /> 
+                              <Eye size={16} />
                             </Button>
                             <Button
                               variant="destructive"
@@ -431,7 +461,7 @@ export default function Profile() {
                               onClick={() => handleDeleteConfirmation(course.id, 'course')}
                               className="flex items-center gap-1"
                             >
-                              <Trash size={16} /> 
+                              <Trash size={16} />
                             </Button>
                           </div>
                         </div>
@@ -441,9 +471,10 @@ export default function Profile() {
                 ) : (
                   <div className="text-center py-8">
                     <p className="text-gray-500">You haven't created any courses yet</p>
-                    <Button className="mt-4" onClick={() => navigate("/addcourse")}>
-                      Create Your First Course
-                    </Button>
+                    {/* <Button className="mt-4 flex items-center gap-2" onClick={() => navigate("/addcourse")}>
+                      <PlusCircle size={16} /> */}
+                      {/* Create Your First Course */}
+                    {/* </Button> */}
                   </div>
                 )}
               </CardContent>
@@ -452,14 +483,18 @@ export default function Profile() {
             {/* Toolkits Section */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Your Toolkits</CardTitle>
-                  <CardDescription>
-                    {userToolkits.length} toolkits created
-                  </CardDescription>
+                <div className="flex items-center gap-2">
+                  <Briefcase size={20} className="text-purple-600" />
+                  <div>
+                    <CardTitle>Your Toolkits</CardTitle>
+                    <CardDescription>
+                      {userToolkits.length} toolkits created
+                    </CardDescription>
+                  </div>
                 </div>
-                <Button onClick={() => navigate("/add-toolkit")}>
-                  Add New Toolkit
+                <Button onClick={() => navigate("/add-toolkit")} className="flex items-center gap-1">
+                  <PlusCircle size={16} />
+                  {/* Add Toolkit */}
                 </Button>
               </CardHeader>
               <CardContent>
@@ -487,7 +522,7 @@ export default function Profile() {
                               onClick={() => handleViewItem(toolkit.id, 'toolkit')}
                               className="flex items-center gap-1"
                             >
-                              <Eye size={16} /> View
+                              <Eye size={16} />
                             </Button>
                             <Button
                               variant="destructive"
@@ -495,7 +530,7 @@ export default function Profile() {
                               onClick={() => handleDeleteConfirmation(toolkit.id, 'toolkit')}
                               className="flex items-center gap-1"
                             >
-                              <Trash size={16} /> Delete
+                              <Trash size={16} />
                             </Button>
                           </div>
                         </div>
@@ -505,9 +540,10 @@ export default function Profile() {
                 ) : (
                   <div className="text-center py-8">
                     <p className="text-gray-500">You haven't created any toolkits yet</p>
-                    <Button className="mt-4" onClick={() => navigate("/add-toolkit")}>
-                      Create Your First Toolkit
-                    </Button>
+                    {/* <Button className="mt-4 flex items-center gap-2" onClick={() => navigate("/add-toolkit")}>
+                      <PlusCircle size={16} /> */}
+                      {/* Create Your First Toolkit */}
+                    {/* </Button> */}
                   </div>
                 )}
               </CardContent>
@@ -530,7 +566,10 @@ export default function Profile() {
           </DialogHeader>
           <div className="flex justify-end gap-2 py-3">
             <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline" className="flex items-center gap-1">
+                <X size={16} />
+                Cancel
+              </Button>
             </DialogClose>
             <Button variant="destructive" onClick={handleDelete} className="flex items-center gap-1">
               <Trash size={16} />
