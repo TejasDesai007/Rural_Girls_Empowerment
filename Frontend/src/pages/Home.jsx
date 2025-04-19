@@ -329,42 +329,42 @@ function AnimatedTestimonialsDemo() {
         "This platform changed my life! I learned tailoring and started my own small business.",
       name: "Lakshmi",
       designation: "Uttar Pradesh",
-      src: "https://images.unsplash.com/photo-1441307811206-a12c74889338?q=80&w=600&auto=format&fit=crop",
+      src: "/assets/lakshmi.jpg",
     },
     {
       quote:
         "Mentorship helped me choose the right career path. Grateful for this community!",
-      name: "Savita",
+      name: "Kalyani",
       designation: "Rajasthan",
-      src: "https://images.unsplash.com/photo-1699873728107-9ce97c8f78eb?q=80&w=600&auto=format&fit=crop",
+      src: "/assets/kalyani.jpg",
     },
     {
       quote:
         "I never thought online learning could be this accessible. The toolkit resources are super useful.",
-      name: "Kalyani",
+      name: "Savita",
       designation: "Bihar",
-      src: "https://images.unsplash.com/photo-1518131296958-df44106fd0ae?q=80&w=600&auto=format&fit=crop",
+      src: "/assets/savita.jpg",
     },
     {
       quote:
         "The AI assistant feature is amazing! I got answers to my doubts instantly, without waiting.",
       name: "Jayshree",
       designation: "Maharashtra",
-      src: "https://images.unsplash.com/photo-1604998268070-8d9b57c181ec?q=80&w=600&auto=format&fit=crop",
+      src: "/assets/jayashree.jpg",
     },
     {
       quote:
         "Connecting with mentors helped me improve my confidence and communication. Highly recommended!",
       name: "Madhavi",
       designation: "Karnataka",
-      src: "https://images.unsplash.com/photo-1668258848213-c1967ba6fb01?q=80&w=600&auto=format&fit=crop",
+      src: "/assets/madhavi.jpg",
     },
     {
       quote:
         "As a working mother, flexible learning made all the difference. I could study whenever I had time.",
       name: "Chandramukhi",
       designation: "Madhya Pradesh",
-      src: "https://images.unsplash.com/photo-1609252285522-ed0ebdd43551?q=80&w=600&auto=format&fit=crop",
+      src: "/assets/chandramukhi.jpg",
     },
   ];
 
