@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -9,6 +9,23 @@ import { auth } from "../firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { db } from "../firebase";
 import { collection, query, where, getDocs, writeBatch, doc, getDoc } from "firebase/firestore";
+
+
+function MobileNavLink({ to, label }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isActive = location.pathname === to;
+
+  return (
+    <Button
+      variant={isActive ? "default" : "ghost"}
+      onClick={() => navigate(to)}
+      className="justify-start"
+    >
+      {label}
+    </Button>
+  );
+}
 
 export default function Navbar() {
   const [user, setUser] = useState(null);
@@ -25,7 +42,7 @@ export default function Navbar() {
         try {
           // Fetch user role from database based on email
           const userRole = await fetchUserRole(firebaseUser.email);
-          
+
           const userData = {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
@@ -33,7 +50,7 @@ export default function Navbar() {
             photoURL: firebaseUser.photoURL,
             role: userRole,
           };
-          
+
           setUser(userData);
           setVariant(userRole);
         } catch (error) {
@@ -53,7 +70,7 @@ export default function Navbar() {
     // Handle page reload - get data from session storage first
     const storedUserJSON = sessionStorage.getItem("user");
     const storedRole = sessionStorage.getItem("role");
-    
+
     if (storedUserJSON && storedRole) {
       try {
         const storedUser = JSON.parse(storedUserJSON);
@@ -77,31 +94,31 @@ export default function Navbar() {
       const usersRef = collection(db, "users");
       const q = query(usersRef, where("email", "==", email));
       const querySnapshot = await getDocs(q);
-      
+
       if (!querySnapshot.empty) {
         // User found in users collection
         const userData = querySnapshot.docs[0].data();
         return userData.role || "user"; // Default to "user" if role is not specified
       }
-      
+
       // If not found in users collection, check admin collection
       const adminsRef = collection(db, "admins");
       const adminQuery = query(adminsRef, where("email", "==", email));
       const adminSnapshot = await getDocs(adminQuery);
-      
+
       if (!adminSnapshot.empty) {
         return "admin";
       }
-      
+
       // If not found in admins, check mentors collection
       const mentorsRef = collection(db, "mentors");
       const mentorQuery = query(mentorsRef, where("email", "==", email));
       const mentorSnapshot = await getDocs(mentorQuery);
-      
+
       if (!mentorSnapshot.empty) {
         return "mentor";
       }
-      
+
       // If no role is found in any collection, default to "user"
       return "user";
     } catch (error) {
@@ -177,7 +194,7 @@ export default function Navbar() {
     try {
       // Sign out from Firebase
       await signOut(auth);
-      
+
       // Navigate to home page
       navigate("/");
     } catch (error) {
@@ -299,20 +316,30 @@ export default function Navbar() {
             </SheetTrigger>
 
             <SheetContent side="left" className="w-[250px] sm:w-[300px]">
-              <div className="flex flex-col gap-4 py-6">
-                <Link to="/" className="text-lg font-semibold text-purple-700 hover:text-purple-900">
-                  EmpowerHer
-                </Link>
+              <div className="flex flex-col gap-4 py-6 px-4 h-full justify-between">
+                <div>
+                  {/* App Logo / Title */}
+                  <Link to="/" className="text-xl font-bold text-purple-700 hover:text-purple-900">
+                    EmpowerHer
+                  </Link>
 
-                {user && (
-                  <div className="text-sm text-gray-500 font-medium">
-                    Role: {variant}
-                  </div>
-                )}
+                  {/* Show role if logged in */}
+                  {user && (
+                    <div className="text-sm text-gray-500 mt-1">Role: <span className="font-medium">{variant}</span></div>
+                  )}
 
-               
+                  {/* Navigation Links */}
+                  <nav className="mt-6 flex flex-col gap-2">
+                    <MobileNavLink to="/" label="Home" />
+                    <MobileNavLink to="/courses" label="Courses" />
+                    <MobileNavLink to="/toolkit" label="Toolkit" />
+                    <MobileNavLink to="/mentor-match" label="Mentor Match" />
+                    <MobileNavLink to="/career" label="Career" />
+                  </nav>
+                </div>
 
-                <div className="border-t pt-4 mt-4 flex flex-col gap-3">
+                {/* Auth Actions */}
+                <div className="border-t pt-4 mt-4 flex flex-col gap-2">
                   {variant === "guest" ? (
                     <>
                       <Button variant="outline" onClick={() => navigate("/register")}>Register</Button>
@@ -320,8 +347,8 @@ export default function Navbar() {
                     </>
                   ) : (
                     <>
-                      <Button onClick={() => navigate("/my-profile")}>Profile</Button>
-                      <Button onClick={() => navigateToNotifications}>Notifications</Button>
+                      <Button onClick={() => navigate("/my-profile")}>My Profile</Button>
+                      <Button onClick={() => navigate(getNotificationPath(variant))}>Notifications</Button>
                       <Button onClick={handleLogout} variant="destructive">Logout</Button>
                     </>
                   )}
@@ -330,6 +357,7 @@ export default function Navbar() {
             </SheetContent>
           </Sheet>
         </div>
+
       </div>
     </nav>
   );

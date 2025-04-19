@@ -76,56 +76,61 @@ function App() {
 
   return (
     <Router>
-      <CustomTranslator />
-      <Navbar variant={variant} />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/courses" element={<Courses />} />
-        <Route path="/courses/:courseId" element={<CoursePlayer />} />
-        <Route path="/mentor-match" element={<MentorMatch />} />
-        <Route path="/testCloud" element={<DownloadFile />} />
+      <div className="flex flex-col min-h-screen">
+        <CustomTranslator />
+        <Navbar variant={variant} />
+
+        <div className="flex-1">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/courses" element={<Courses />} />
+            <Route path="/courses/:courseId" element={<CoursePlayer />} />
+            <Route path="/mentor-match" element={<MentorMatch />} />
+            <Route path="/testCloud" element={<DownloadFile />} />
 
 
-        <Route path="/register" element={<Register />} />
-        <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/login" element={<Login />} />
 
-        <Route path="/chat-assistant" element={<ChatAssistant />} />
+            <Route path="/chat-assistant" element={<ChatAssistant />} />
 
-        <Route path="/about" element={<About />} />
-        <Route path="/privacy-terms" element={<PrivacyTerms />} />
-        <Route path="/my-profile" element={<MyProfile />} />
-        <Route path="/addtoolkit" element={<AddToolkit />} />
-        <Route path="/toolkit" element={<Toolkit />} />
-        <Route path="/Entrepreneurship" element={<Entrepreneurship />} />
-        <Route path="/products/:id" element={<ProductDetails />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/payment-method" element={<PaymentMethodPage />} />
-        
-
+            <Route path="/about" element={<About />} />
+            <Route path="/privacy-terms" element={<PrivacyTerms />} />
+            <Route path="/my-profile" element={<MyProfile />} />
+            <Route path="/addtoolkit" element={<AddToolkit />} />
+            <Route path="/toolkit" element={<Toolkit />} />
+            <Route path="/Entrepreneurship" element={<Entrepreneurship />} />
+            <Route path="/products/:id" element={<ProductDetails />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/payment-method" element={<PaymentMethodPage />} />
 
 
-        {/* Admin Routes */}
-        <Route path="/admin-panel" element={<AdminPanel />} />
-        <Route path="/user-management" element={<UserManagement />} />
-        <Route path="/reports" element={<Reports />} />
-        <Route path="/addcourse" element={<AddCourse />} />
-        <Route path="/add-toolkit" element={<AddToolkit />} />
 
-        {/* Notifications */}
-        <Route path="/mentor-notification" element={<MentorNotification />} />
-        <Route path="/mentor-requests" element={<MentorRequests />} />
-        <Route path="/mentor-dashboard" element={<MentorDashboard />} />
 
-        {/* User Routes */}
-        <Route path="/user-notification" element={<UserNotification />} />
-        <Route path="/user-dashboard" element={<UserDashboard />} />
+            {/* Admin Routes */}
+            <Route path="/admin-panel" element={<AdminPanel />} />
+            <Route path="/user-management" element={<UserManagement />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/addcourse" element={<AddCourse />} />
+            <Route path="/add-toolkit" element={<AddToolkit />} />
 
-        {/* Career Routes */}
-        <Route path="/career" element={<CareerPage />} />
-        
-      
-      </Routes>
-      <Footer />
+            {/* Notifications */}
+            <Route path="/mentor-notification" element={<MentorNotification />} />
+            <Route path="/mentor-requests" element={<MentorRequests />} />
+            <Route path="/mentor-dashboard" element={<MentorDashboard />} />
+
+            {/* User Routes */}
+            <Route path="/user-notification" element={<UserNotification />} />
+            <Route path="/user-dashboard" element={<UserDashboard />} />
+
+            {/* Career Routes */}
+            <Route path="/career" element={<CareerPage />} />
+
+
+          </Routes>
+        </div>
+        <Footer />
+      </div>
     </Router>
   );
 }
