@@ -34,6 +34,9 @@ import MentorRequests from "./pages/MentorRequests";
 //User imports
 import UserNotification from "./pages/UserNotification";
 
+//Google translate API widget
+import CustomTranslator from "./components/GoogleTranslateWidget";
+
 function App() {
   const [variant, setVariant] = useState("guest");
 
@@ -59,6 +62,7 @@ function App() {
 
   return (
     <Router>
+      <CustomTranslator />
       <Navbar variant={variant} />
       <Routes>
         <Route path="/" element={<Home />} />
