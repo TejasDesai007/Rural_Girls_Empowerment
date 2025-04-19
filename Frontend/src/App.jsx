@@ -9,7 +9,6 @@ import Toolkit from "./pages/Toolkit";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import ChatAssistant from "./pages/ChatAssistant";
-
 import About from "./pages/About";
 import PrivacyTerms from "./pages/PrivacyTerms";
 import Navbar from "./components/Navbar";
@@ -23,13 +22,10 @@ import AddCourse from "./pages/AddCourse";
 import MyProfile from "./pages/MyProfile";
 import AddToolkit from "./pages/AddToolkit";
 import ProductDetails from "./pages/entrepreneur/ProductsDetails";
-
 import Entrepreneurship from "./pages/entrepreneur/Entrepreneurship";
 import Checkout from "./pages/entrepreneur/Checkout";
-
-
-//Mentor imports
 import MentorNotification from "./pages/MentorNotification";
+import EntrepreneurCorner from "./pages/entrepreneur/EntrepreneurCorner"; // Add this import
 
 function App() {
   return (
@@ -41,13 +37,9 @@ function App() {
         <Route path="/courses/:courseId" element={<CoursePlayer />} />
         <Route path="/mentor-match" element={<MentorMatch />} />
         <Route path="/testCloud" element={<DownloadFile />} />
-
-
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
-
         <Route path="/chat-assistant" element={<ChatAssistant />} />
-
         <Route path="/about" element={<About />} />
         <Route path="/privacy-terms" element={<PrivacyTerms />} />
         <Route path="/my-profile" element={<MyProfile />} />
@@ -56,8 +48,7 @@ function App() {
         <Route path="/Entrepreneurship" element={<Entrepreneurship />} />
         <Route path="/products/:id" element={<ProductDetails />} />
         <Route path="/checkout" element={<Checkout />} />
-
-
+        <Route path="/entrepreneur-corner" element={<EntrepreneurCorner />} /> {/* New route */}
 
         {/* Admin Routes */}
         <Route path="/admin-panel" element={<AdminPanel />} />
@@ -72,4 +63,5 @@ function App() {
     </Router>
   );
 }
+
 export default App;

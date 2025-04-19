@@ -1,15 +1,15 @@
-// src/pages/entrepreneur/EntrepreneurDashboard.jsx
 import React, { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
 
 // Import tab components
 import DashboardTab from "./tabs/DashboardTab";
 import ProductsTab from "./tabs/ProductsTab";
 import OrdersTab from "./tabs/OrdersTab";
 import MarketplaceTab from "./tabs/MarketplaceTab";
-import CartTab from "./tabs/CartTab"; // Add this import
+import CartTab from "./tabs/CartTab";
 import MySellsTab from "./tabs/SellsTab";
 
 const EntrepreneurDashboard = () => {
@@ -23,9 +23,11 @@ const EntrepreneurDashboard = () => {
                     My Business Dashboard
                 </h1>
                 <div className="flex gap-2">
-                    <Badge variant="outline" className="bg-green-50">
-                        Active Entrepreneur
-                    </Badge>
+                    <Link to="/entrepreneur-corner">
+                        <Badge variant="outline" className="bg-green-50 hover:bg-green-100 cursor-pointer">
+                            Entrepreneur Corner
+                        </Badge>
+                    </Link>
                     <Button size="sm">Help Center</Button>
                 </div>
             </header>
@@ -36,7 +38,7 @@ const EntrepreneurDashboard = () => {
                     <TabsTrigger value="products">My Products</TabsTrigger>
                     <TabsTrigger value="sells">My Sells</TabsTrigger>
                     <TabsTrigger value="orders">Orders</TabsTrigger>
-                    <TabsTrigger value="cart">Cart</TabsTrigger> {/* Add this tab */}
+                    <TabsTrigger value="cart">Cart</TabsTrigger>
                     <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
                 </TabsList>
 
@@ -57,7 +59,7 @@ const EntrepreneurDashboard = () => {
                     <OrdersTab />
                 </TabsContent>
 
-                <TabsContent value="cart"> {/* Add this content */}
+                <TabsContent value="cart">
                     <CartTab />
                 </TabsContent>
 
