@@ -42,6 +42,7 @@ export default function MainNavbar() {
   const notificationRef = useRef(null);
   const exploreMenuRef = useRef(null);
 
+  // Admin Notification alert icon
   useEffect(() => {
     const q = query(
       collection(db, "admin_notifications"),
@@ -58,6 +59,43 @@ export default function MainNavbar() {
 
     return () => unsubscribe();
   }, []);
+
+  // User Notification alert icon
+  useEffect(() => {
+    const q = query(
+      collection(db, "user_notifications"),
+      where("read", "==", false)
+    );
+  
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const notifs = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setUnreadUserNotifications(notifs);
+    });
+  
+    return () => unsubscribe();
+  }, []);
+  
+  // Mentor Notification alert icon
+  useEffect(() => {
+    const q = query(
+      collection(db, "mentor_notifications"),
+      where("read", "==", false)
+    );
+  
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const notifs = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setUnreadMentorNotifications(notifs);
+    });
+  
+    return () => unsubscribe();
+  }, []);
+  
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
