@@ -8,7 +8,7 @@ import logo from "../assets/icons/logo.png";
 import { auth } from "../firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { db } from "../firebase";
-import { collection, query, where, getDocs, writeBatch, doc } from "firebase/firestore";
+import { collection, query, where, getDocs, writeBatch, doc, getDoc } from "firebase/firestore";
 
 export default function Navbar() {
   const [user, setUser] = useState(null);
@@ -19,34 +19,32 @@ export default function Navbar() {
   const navigate = useNavigate();
   const notificationRef = useRef(null);
 
-  // Auth state management with proper synchronization
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // Get role from session storage or default to "user"
-        const currentRole = sessionStorage.getItem("role") || "user";
-        
-        const userData = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          photoURL: firebaseUser.photoURL,
-          role: currentRole,
-        };
-        
-        // Update state first
-        setUser(userData);
-        setVariant(currentRole);
-        
-        // Then update session storage
-        sessionStorage.setItem("user", JSON.stringify(userData));
-        sessionStorage.setItem("role", currentRole);
+        try {
+          // Fetch user role from database based on email
+          const userRole = await fetchUserRole(firebaseUser.email);
+          
+          const userData = {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+            role: userRole,
+          };
+          
+          setUser(userData);
+          setVariant(userRole);
+        } catch (error) {
+          console.error("Error fetching user role:", error);
+          // Default to "user" role if there's an error
+          setVariant("user");
+        }
       } else {
         // Clear everything when logged out
         setUser(null);
         setVariant("guest");
-        sessionStorage.removeItem("user");
-        sessionStorage.removeItem("role");
         setUnreadNotifications([]);
         setIsNotificationOpen(false);
       }
@@ -72,19 +70,45 @@ export default function Navbar() {
     return () => unsubscribe();
   }, []);
 
-  // Add click outside handler for notifications dropdown
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
-        setIsNotificationOpen(false);
+  // Function to fetch user role from database
+  const fetchUserRole = async (email) => {
+    try {
+      // First try to find the user in the 'users' collection
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, where("email", "==", email));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        // User found in users collection
+        const userData = querySnapshot.docs[0].data();
+        return userData.role || "user"; // Default to "user" if role is not specified
       }
+      
+      // If not found in users collection, check admin collection
+      const adminsRef = collection(db, "admins");
+      const adminQuery = query(adminsRef, where("email", "==", email));
+      const adminSnapshot = await getDocs(adminQuery);
+      
+      if (!adminSnapshot.empty) {
+        return "admin";
+      }
+      
+      // If not found in admins, check mentors collection
+      const mentorsRef = collection(db, "mentors");
+      const mentorQuery = query(mentorsRef, where("email", "==", email));
+      const mentorSnapshot = await getDocs(mentorQuery);
+      
+      if (!mentorSnapshot.empty) {
+        return "mentor";
+      }
+      
+      // If no role is found in any collection, default to "user"
+      return "user";
+    } catch (error) {
+      console.error("Error fetching user role:", error);
+      return "user"; // Default role
     }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
+  };
 
   const fetchUnreadNotifications = async () => {
     if (!user || loadingNotifications) return;
@@ -141,11 +165,7 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     try {
-      // First clear session storage
-      sessionStorage.removeItem("user");
-      sessionStorage.removeItem("role");
-      
-      // Then sign out from Firebase
+      // Sign out from Firebase
       await signOut(auth);
       
       // Navigate to home page
