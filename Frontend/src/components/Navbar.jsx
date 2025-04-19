@@ -163,6 +163,16 @@ export default function Navbar() {
     }
   };
 
+  // Function to navigate to the appropriate notification page based on user role
+  const navigateToNotifications = () => {
+    if (variant === "mentor" || variant === "admin") {
+      navigate("/mentor-notification");
+    } else {
+      navigate("/user-notification");
+    }
+    setIsNotificationOpen(false);
+  };
+
   const handleLogout = async () => {
     try {
       // Sign out from Firebase
@@ -261,7 +271,7 @@ export default function Navbar() {
             <Button variant="link" size="sm" onClick={markNotificationsAsRead} disabled={unreadNotifications.length === 0}>
               Mark all as read
             </Button>
-            <Button variant="link" size="sm" onClick={() => { navigate("/mentor-notification"); setIsNotificationOpen(false); }}>
+            <Button variant="link" size="sm" onClick={navigateToNotifications}>
               See All
             </Button>
           </div>
@@ -270,7 +280,7 @@ export default function Navbar() {
         <div className="p-4 text-center text-gray-500 text-sm">
           No unread notifications.
           <div className="mt-2">
-            <Button variant="outline" size="sm" className="w-full" onClick={() => { navigate("/mentor-notification"); setIsNotificationOpen(false); }}>
+            <Button variant="outline" size="sm" className="w-full" onClick={navigateToNotifications}>
               See All Notifications
             </Button>
           </div>
@@ -436,6 +446,7 @@ export default function Navbar() {
                   ) : (
                     <>
                       <Button onClick={() => navigate("/my-profile")}>Profile</Button>
+                      <Button onClick={() => navigateToNotifications}>Notifications</Button>
                       <Button onClick={handleLogout} variant="destructive">Logout</Button>
                     </>
                   )}
