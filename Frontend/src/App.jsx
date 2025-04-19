@@ -12,7 +12,6 @@ import Toolkit from "./pages/Toolkit";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import ChatAssistant from "./pages/ChatAssistant";
-
 import About from "./pages/About";
 import PrivacyTerms from "./pages/PrivacyTerms";
 import Navbar from "./components/Navbar";
@@ -26,11 +25,11 @@ import AddCourse from "./pages/AddCourse";
 import MyProfile from "./pages/MyProfile";
 import AddToolkit from "./pages/AddToolkit";
 import ProductDetails from "./pages/entrepreneur/ProductsDetails";
-
 import Entrepreneurship from "./pages/entrepreneur/Entrepreneurship";
 import Checkout from "./pages/entrepreneur/Checkout";
 import PaymentMethodPage from "./pages/entrepreneur/PaymentMethod";
 import BuyNow from "./pages/entrepreneur/BuyNow";
+import EntrepreneurCorner from "./pages/entrepreneur/EntrepreneurCorner";
 
 
 
@@ -78,6 +77,7 @@ function App() {
         <Route path="/mentor-match" element={<MentorMatch />} />
         <Route path="/testCloud" element={<DownloadFile />} />
         <Route path="/BuyNow" element={<BuyNow />} />
+        <Route path="/entrepreneur-corner" element={<EntrepreneurCorner />} />
 
 
         <Route path="/register" element={<Register />} />
@@ -85,7 +85,6 @@ function App() {
 
 
         <Route path="/chat-assistant" element={<ChatAssistant />} />
-
         <Route path="/about" element={<About />} />
         <Route path="/privacy-terms" element={<PrivacyTerms />} />
         <Route path="/my-profile" element={<MyProfile />} />
@@ -117,4 +116,5 @@ function App() {
     </Router>
   );
 }
+
 export default App;
