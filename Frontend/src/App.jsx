@@ -13,6 +13,7 @@ import Register from "./pages/Register";
 import Login from "./pages/Login";
 import ChatAssistant from "./pages/ChatAssistant";
 import EntrepreneurToolkit from "./pages/EntrepreneurToolkit";
+import Footer from "./pages/Footer";
 
 import About from "./pages/About";
 import PrivacyTerms from "./pages/PrivacyTerms";
@@ -96,6 +97,7 @@ function App() {
         <Route path="/user-notification" element={<UserNotification />} />
         
       </Routes>
+      <Footer />
     </Router>
   );
 }

@@ -7,7 +7,10 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { db } from "../firebase";
 import { addDoc, collection, getDocs } from "firebase/firestore";
 import { toast } from "react-hot-toast";
-import { CheckCircle } from "lucide-react"; // Import CheckCircle icon
+import { CheckCircle, Calendar, ArrowLeft } from "lucide-react"; 
+
+import { HoverEffect } from "../components/ui/card-hover-effect";
+import { CardContainer, CardBody, CardItem } from "../components/ui/3d-card";
 
 const MentorMatch = () => {
   const [selectedMentor, setSelectedMentor] = useState(null);
@@ -16,6 +19,7 @@ const MentorMatch = () => {
   const [isBooking, setIsBooking] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -39,6 +43,7 @@ const MentorMatch = () => {
     });
 
     const fetchMentors = async () => {
+      setIsLoading(true);
       try {
         const snapshot = await getDocs(collection(db, "users"));
         const mentorList = snapshot.docs
@@ -47,6 +52,9 @@ const MentorMatch = () => {
         setMentors(mentorList);
       } catch (error) {
         console.error("Error fetching mentors:", error);
+        toast.error("Could not load mentors. Please try again.");
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -141,48 +149,103 @@ const MentorMatch = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 relative">
-      {/* Success Animation */}
+    <div className="min-h-screen bg-gradient-to-b from-white to-blue-50 text-gray-900">
+      {/* Success Modal */}
       {showSuccess && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg p-8 shadow-lg max-w-md mx-4 animate-fade-in-up">
-            <div className="flex flex-col items-center text-center">
-              <div className="rounded-full bg-green-100 p-4 mb-4">
-                <CheckCircle className="h-12 w-12 text-green-600 animate-pulse" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">Request Sent Successfully!</h3>
-              <p className="text-gray-600 mb-4">{successMessage}</p>
-              <p className="text-gray-500 text-sm">You'll be notified when they respond.</p>
-              <button
-                className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                onClick={() => setShowSuccess(false)}
-              >
-                Continue Browsing
-              </button>
-            </div>
-          </div>
+          <CardContainer className="w-full max-w-md">
+            <CardBody className="bg-white rounded-xl p-8 shadow-xl">
+              <CardItem translateZ={50} className="flex flex-col items-center text-center">
+                <div className="rounded-full bg-green-100 p-4 mb-6">
+                  <CheckCircle className="h-12 w-12 text-green-600 animate-pulse" />
+                </div>
+                <h3 className="text-2xl font-bold mb-3">Request Sent Successfully!</h3>
+                <p className="text-gray-700 mb-4 text-lg">{successMessage}</p>
+                <p className="text-gray-500 mb-6">You'll be notified when they respond.</p>
+                <button
+                  className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-md"
+                  onClick={() => setShowSuccess(false)}
+                >
+                  Continue Browsing
+                </button>
+              </CardItem>
+            </CardBody>
+          </CardContainer>
         </div>
       )}
 
       <HeroBanner />
-      <section className="max-w-6xl mx-auto px-4 py-12">
-        {!selectedMentor ? (
-          <AvailableMentorsList
-            mentors={mentors}
-            onMentorSelect={setSelectedMentor}
-          />
-        ) : (
-          <ScheduleSection
-            selectedMentor={selectedMentor}
-            menteeId={menteeId}
-            onBooked={handleBookingComplete}
-            onBack={() => setSelectedMentor(null)}
-            isBooking={isBooking}
-          />
+      
+      {/* Main content area with improved layout */}
+      <main className="max-w-7xl mx-auto px-4 py-12">
+        {/* Section header with context-aware title */}
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+              {selectedMentor ? 'Schedule Your Session' : 'Find Your Perfect Mentor'}
+            </h2>
+            <p className="text-gray-600 max-w-2xl">
+              {selectedMentor 
+                ? `Choose a time that works for both you and ${selectedMentor.name}.` 
+                : 'Browse our expertly vetted mentors and find the right match for your career goals.'}
+            </p>
+          </div>
+          
+          {/* Back button when mentor is selected */}
+          {selectedMentor && (
+            <button 
+              onClick={() => setSelectedMentor(null)}
+              className="flex items-center text-blue-600 hover:text-blue-800 transition-colors font-medium"
+            >
+              <ArrowLeft className="mr-2 h-5 w-5" />
+              Back to Mentors
+            </button>
+          )}
+        </div>
+        
+        {/* Loading indicator */}
+        {isLoading && (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
         )}
-      </section>
+        
+        {/* Conditional rendering based on selection state */}
+        {!isLoading && (
+          <div className="transition-all duration-300">
+            {!selectedMentor ? (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                {mentors.length > 0 ? (
+                  <AvailableMentorsList
+                    mentors={mentors}
+                    onMentorSelect={setSelectedMentor}
+                  />
+                ) : (
+                  <div className="text-center py-12">
+                    <Calendar className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+                    <h3 className="text-xl font-medium text-gray-700 mb-2">No Mentors Available</h3>
+                    <p className="text-gray-500 max-w-md mx-auto">
+                      There are currently no mentors available. Please check back later.
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl shadow-md p-6 md:p-8">
+                <ScheduleSection
+                  selectedMentor={selectedMentor}
+                  menteeId={menteeId}
+                  onBooked={handleBookingComplete}
+                  onBack={() => setSelectedMentor(null)}
+                  isBooking={isBooking}
+                />
+              </div>
+            )}
+          </div>
+        )}
+      </main>
 
-      {/* Add CSS for animations */}
+      {/* CSS for animations */}
       <style jsx global>{`
         @keyframes fadeInUp {
           from {
