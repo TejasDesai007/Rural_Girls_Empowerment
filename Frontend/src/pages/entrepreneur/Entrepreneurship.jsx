@@ -8,8 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import DashboardTab from "./tabs/DashboardTab";
 import ProductsTab from "./tabs/ProductsTab";
 import OrdersTab from "./tabs/OrdersTab";
-
 import MarketplaceTab from "./tabs/MarketplaceTab";
+import CartTab from "./tabs/CartTab"; // Add this import
 
 const EntrepreneurDashboard = () => {
     const [activeTab, setActiveTab] = useState("dashboard");
@@ -34,7 +34,7 @@ const EntrepreneurDashboard = () => {
                     <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
                     <TabsTrigger value="products">My Products</TabsTrigger>
                     <TabsTrigger value="orders">Orders</TabsTrigger>
-                    
+                    <TabsTrigger value="cart">Cart</TabsTrigger> {/* Add this tab */}
                     <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
                 </TabsList>
 
@@ -51,7 +51,9 @@ const EntrepreneurDashboard = () => {
                     <OrdersTab />
                 </TabsContent>
 
-                
+                <TabsContent value="cart"> {/* Add this content */}
+                    <CartTab />
+                </TabsContent>
 
                 <TabsContent value="marketplace">
                     <MarketplaceTab />

@@ -5,9 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { db, storage } from "../../../firebase";
+import { db, storage, auth } from "../../../firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { collection, addDoc, getDocs } from "firebase/firestore";
+import { collection, addDoc, getDocs, doc, updateDoc, getDoc } from "firebase/firestore";
 import { v4 as uuidv4 } from 'uuid';
 
 const ProductsTab = () => {
@@ -21,11 +21,9 @@ const ProductsTab = () => {
         imageUrl: ""
     });
     const [imageFiles, setImageFiles] = useState([]);
-
     const [loading, setLoading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [editProductId, setEditProductId] = useState(null);
-
 
     // Fetch products from Firestore
     const handleEditClick = (product) => {
@@ -37,7 +35,7 @@ const ProductsTab = () => {
             description: product.description,
             imageUrls: product.imageUrls || []
         });
-        setImageFiles([]); // reset any newly selected files
+        setImageFiles([]);
         setEditProductId(product.id);
     };
 
@@ -67,15 +65,14 @@ const ProductsTab = () => {
         }
     };
 
-
     const uploadImagesToCloudinary = async () => {
         const uploadedUrls = [];
 
         for (const file of imageFiles) {
             const formData = new FormData();
             formData.append("file", file);
-            formData.append("upload_preset", "ruralEmpowerment"); // Replace
-            formData.append("cloud_name", "dczpxrdq1"); // Replace
+            formData.append("upload_preset", "ruralEmpowerment");
+            formData.append("cloud_name", "dczpxrdq1");
 
             try {
                 const res = await fetch("https://api.cloudinary.com/v1_1/dczpxrdq1/image/upload", {
@@ -92,7 +89,50 @@ const ProductsTab = () => {
         return uploadedUrls;
     };
 
-
+    const sendWhatsAppMessage = async (productId, productName, category, price) => {
+        try {
+            // Get current user's phone number from Firebase
+            const user = auth.currentUser;
+            if (!user) throw new Error("User not authenticated");
+            
+            const userDoc = await getDoc(doc(db, "users", user.uid));
+            if (!userDoc.exists()) throw new Error("User document not found");
+            
+            const userData = userDoc.data();
+            const phoneNumber = userData.phoneNumber; // Assuming phoneNumber is stored in user document
+            
+            if (!phoneNumber) throw new Error("Phone number not found for user");
+            
+            // Create product link
+            const productLink = `${window.location.origin}/product/${productId}`;
+            
+            // Create message
+            const message = `New Product Added!\n\n` +
+                           `*Name:* ${productName}\n` +
+                           `*Category:* ${category}\n` +
+                           `*Price:* ₹${price}\n\n` +
+                           `View product: ${productLink}`;
+            
+            // Send to backend
+            const response = await fetch('/api/send-message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    number: phoneNumber,
+                    message: message
+                })
+            });
+            
+            if (!response.ok) throw new Error('Failed to send message');
+            
+            return await response.json();
+        } catch (error) {
+            console.error("Error sending WhatsApp message:", error);
+            throw error;
+        }
+    };
 
     const handleAddOrUpdateProduct = async (e) => {
         e.preventDefault();
@@ -132,6 +172,19 @@ const ProductsTab = () => {
                     ...productData,
                     createdAt: new Date().toISOString()
                 });
+                
+                // Send WhatsApp message for new products only
+                try {
+                    await sendWhatsAppMessage(
+                        docRef.id,
+                        newProduct.name,
+                        newProduct.category,
+                        newProduct.price
+                    );
+                } catch (error) {
+                    console.error("WhatsApp notification failed, but product was added", error);
+                }
+                
                 setProducts([...products, { id: docRef.id, ...productData }]);
             }
 
@@ -145,8 +198,6 @@ const ProductsTab = () => {
             setLoading(false);
         }
     };
-
-
 
     return (
         <div className="space-y-6">
@@ -199,7 +250,6 @@ const ProductsTab = () => {
                                             >
                                                 Edit
                                             </Button>
-
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -212,7 +262,7 @@ const ProductsTab = () => {
             {/* Add Product Form */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Add New Product</CardTitle>
+                    <CardTitle>{editProductId ? "Edit Product" : "Add New Product"}</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleAddOrUpdateProduct} className="space-y-4">
@@ -282,9 +332,6 @@ const ProductsTab = () => {
                                 </div>
                             )}
                         </div>
-
-
-
 
                         <div>
                             <label className="block text-sm font-medium mb-1">Description</label>
