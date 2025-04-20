@@ -78,7 +78,7 @@ export default function About() {
       name: "Kiran Bayas",
       linkedin: "https://www.linkedin.com/in/kiran-bayas-72b56b334/",
       image: "https://media.licdn.com/dms/image/v2/D4E03AQE3nrwsqpQ1Hg/profile-displayphoto-shrink_400_400/B4EZU9ziMBHMAo-/0/1740498675824?e=1750291200&v=beta&t=RPaGuJuNy2wydBDITXqpteo39ZWrWmMwcEyzEg1iwdg",
-      role: "API Engineer",
+      role: "Backend Developer",
       connections: "500+"
     },
   ];
@@ -259,7 +259,7 @@ export default function About() {
             Help us bridge the digital divide and empower rural girls with the skills they need to thrive in the digital age.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a href="#" className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-lg hover:opacity-90 transition-opacity">
+            <a href="/register" className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-lg hover:opacity-90 transition-opacity">
               Get Involved
             </a>
             <a href="#" className="px-8 py-3 border border-purple-200 text-purple-700 font-medium rounded-lg hover:bg-purple-50 transition-colors">

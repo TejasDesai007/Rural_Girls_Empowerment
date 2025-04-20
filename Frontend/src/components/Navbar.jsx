@@ -320,6 +320,10 @@ export default function MainNavbar() {
             dropdown: true,
             items: exploreItems,
           },
+          {
+            name: "Career",
+            link: "/career",
+          },
         ];
       case "mentor":
         return [
@@ -335,6 +339,10 @@ export default function MainNavbar() {
           {
             name: "Add Toolkits",
             link: "/add-toolkit",
+          },
+          {
+            name: "Career",
+            link: "/career",
           },
         ];
       case "admin":
@@ -359,6 +367,10 @@ export default function MainNavbar() {
           {
             name: "Add Toolkits",
             link: "/add-toolkit",
+          },
+          {
+            name: "Career",
+            link: "/career",
           },
         ];
       default:

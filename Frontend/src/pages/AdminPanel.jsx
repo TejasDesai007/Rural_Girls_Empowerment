@@ -177,7 +177,7 @@ export default function AdminPanel() {
             <Button
               variant="outline"
               className="bg-white/20 border border-pink-300 text-fuchsia-700 backdrop-blur-sm hover:bg-white/40 transition duration-300"
-              onClick={() => navigate("/profile")}
+              onClick={() => navigate("/my-profile")}
             >
               View Profile
             </Button>

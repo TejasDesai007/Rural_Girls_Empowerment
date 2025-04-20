@@ -48,7 +48,7 @@ const GoogleTranslateWidget = () => {
         onClick={handleTranslateClick}
       >
         <img
-          src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg" // Google logo URL
+          src="https://cdn1.iconfinder.com/data/icons/google-s-logo/150/Google_Icons-09-1024.png" // Google logo URL
           alt="Google Logo"
           className="w-6 h-6" // Size of the logo
         />

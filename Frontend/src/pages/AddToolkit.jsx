@@ -39,7 +39,7 @@ export default function AddToolkit() {
         const userDoc = await getDoc(doc(db, "users", user.uid)); // Assuming 'users' collection
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          if (userData.role === "mentor") {
+          if (userData.role === "mentor" || userData.role === "admin") {
             setIsAuthorized(true);
             setUser(user);
           } else {

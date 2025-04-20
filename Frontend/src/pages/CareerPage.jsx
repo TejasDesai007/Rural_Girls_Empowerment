@@ -375,11 +375,6 @@ const CareerPage = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Footer */}
-        <div className="mt-16 text-center text-gray-600 text-sm">
-          <p>Empowering careers and building professional futures</p>
-          <p className="mt-1">© {new Date().getFullYear()} Career Portal</p>
-        </div>
       </div>
     </div>
   );
