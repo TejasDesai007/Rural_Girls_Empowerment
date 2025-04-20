@@ -34,14 +34,38 @@ export default function MainNavbar() {
   const [user, setUser] = useState(null);
   const [variant, setVariant] = useState("guest");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isExploreOpen, setIsExploreOpen] = useState(false);
+  // Replace the single dropdown state with an object to handle multiple dropdowns
+  const [openDropdowns, setOpenDropdowns] = useState({
+    explore: false,
+    manage: false
+  });
   const [notificationCount, setNotificationCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
   const navigate = useNavigate();
-  const exploreMenuRef = useRef(null);
+  // Create separate refs for each dropdown
+  const dropdownRefs = {
+    explore: useRef(null),
+    manage: useRef(null)
+  };
   const notificationRef = useRef(null);
+
+  // Function to toggle a specific dropdown
+  const toggleDropdown = (name) => {
+    setOpenDropdowns(prev => ({
+      ...prev,
+      [name]: !prev[name]
+    }));
+  };
+
+  // Function to close all dropdowns
+  const closeAllDropdowns = () => {
+    setOpenDropdowns({
+      explore: false,
+      manage: false
+    });
+  };
 
   // Function to update user's FCM token in Firestore
   const updateUserToken = async (userId, token) => {
@@ -187,9 +211,19 @@ export default function MainNavbar() {
 
     // Close dropdown on click outside
     const handleClickOutside = (event) => {
-      if (exploreMenuRef.current && !exploreMenuRef.current.contains(event.target)) {
-        setIsExploreOpen(false);
+      let shouldCloseDropdowns = true;
+      
+      // Check if click was inside any of the dropdown menus
+      Object.keys(dropdownRefs).forEach(key => {
+        if (dropdownRefs[key].current && dropdownRefs[key].current.contains(event.target)) {
+          shouldCloseDropdowns = false;
+        }
+      });
+      
+      if (shouldCloseDropdowns) {
+        closeAllDropdowns();
       }
+      
       if (notificationRef.current && !notificationRef.current.contains(event.target)) {
         setIsNotificationOpen(false);
       }
@@ -291,6 +325,7 @@ export default function MainNavbar() {
           {
             name: "Explore",
             dropdown: true,
+            dropdownKey: "explore",
             items: exploreItems,
           },
           {
@@ -298,37 +333,38 @@ export default function MainNavbar() {
             link: "/career",
           },
         ];
-        case "mentor":
-          return [
-            {
-              name: "Dashboard",
-              link: "/mentor-dashboard",
-            },
-            {
-              name: "Explore",
-              dropdown: true,
-              items: exploreItems,
-            },
-            {
-              name: "Manage",
-              dropdown: true,
-              items: [
-                {
-                  name: "Add Toolkits",
-                  link: "/add-toolkit",
-                },
-                {
-                  name: "Career",
-                  link: "/career",
-                },
-                {
-                  name: "Requests",
-                  link: "/mentor-requests",
-                },
-              ],
-            },
-          ];
-        
+      case "mentor":
+        return [
+          {
+            name: "Dashboard",
+            link: "/mentor-dashboard",
+          },
+          {
+            name: "Explore",
+            dropdown: true,
+            dropdownKey: "explore",
+            items: exploreItems,
+          },
+          {
+            name: "Manage",
+            dropdown: true,
+            dropdownKey: "manage",
+            items: [
+              {
+                name: "Add Toolkits",
+                link: "/add-toolkit",
+              },
+              {
+                name: "Career",
+                link: "/career",
+              },
+              {
+                name: "Requests",
+                link: "/mentor-requests",
+              },
+            ],
+          },
+        ];
       case "admin":
         return [
           {
@@ -338,6 +374,7 @@ export default function MainNavbar() {
           {
             name: "Explore",
             dropdown: true,
+            dropdownKey: "explore",
             items: exploreItems,
           },
           {
@@ -357,64 +394,38 @@ export default function MainNavbar() {
             link: "/career",
           },
         ];
-        default:
-          return [
-            {
-              name: "Home",
-              link: "/",
-            },
-            {
-              name: "Explore",
-              dropdown: true,
-              items: [
-                {
-                  name: "Courses",
-                  link: "/courses",
-                },
-                {
-                  name: "Mentorship",
-                  link: "/mentor-match",
-                },
-                {
-                  name: "Toolkits",
-                  link: "/toolkit",
-                },
-                {
-                  name: "Entrepreneur Tools",
-                  link: "/Entrepreneurship",
-                },
-              ],
-            },
-            {
-              name: "AI Assistant",
-              link: "/chat-assistant",
-            },
-          ];
-        
+      default:
         return [
           {
             name: "Home",
             link: "/",
           },
           {
-            name: "Courses",
-            link: "/courses",
-          },
-          {
-            name: "Mentorship",
-            link: "/mentor-match",
-          },
-          {
-            name: "Toolkits",
-            link: "/toolkit",
+            name: "Explore",
+            dropdown: true,
+            dropdownKey: "explore",
+            items: [
+              {
+                name: "Courses",
+                link: "/courses",
+              },
+              {
+                name: "Mentorship",
+                link: "/mentor-match",
+              },
+              {
+                name: "Toolkits",
+                link: "/toolkit",
+              },
+              {
+                name: "Entrepreneur Tools",
+                link: "/Entrepreneurship",
+              },
+            ],
           },
           {
             name: "AI Assistant",
             link: "/chat-assistant",
-          },
-          {
-            name: "Entrepreneur Tools",
-            link: "/Entrepreneurship",
           },
         ];
     }
@@ -472,9 +483,13 @@ export default function MainNavbar() {
           <div className="hidden md:flex items-center gap-6">
             {navItems.map((item, idx) =>
               item.dropdown ? (
-                <div key={`dropdown-${idx}`} className="relative" ref={exploreMenuRef}>
+                <div 
+                  key={`dropdown-${idx}`} 
+                  className="relative" 
+                  ref={dropdownRefs[item.dropdownKey]}
+                >
                   <button
-                    onClick={() => setIsExploreOpen(!isExploreOpen)}
+                    onClick={() => toggleDropdown(item.dropdownKey)}
                     className="flex items-center space-x-1 text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white transition-colors duration-200 font-medium relative group"
                   >
                     <span>{item.name}</span>
@@ -488,20 +503,20 @@ export default function MainNavbar() {
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      className={`transition-transform duration-300 ${isExploreOpen ? 'rotate-180' : ''}`}
+                      className={`transition-transform duration-300 ${openDropdowns[item.dropdownKey] ? 'rotate-180' : ''}`}
                     >
                       <polyline points="6 9 12 15 18 9"></polyline>
                     </svg>
                     <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-neutral-900 dark:bg-white group-hover:w-full transition-all duration-300 ease-in-out"></span>
                   </button>
-                  {isExploreOpen && (
+                  {openDropdowns[item.dropdownKey] && (
                     <div className="absolute top-full left-0 mt-2 w-48 rounded-md bg-white dark:bg-neutral-800 shadow-lg z-50 animate-fadeIn">
                       <div className="py-1">
                         {item.items.map((subItem, subIdx) => (
                           <Link
                             key={`submenu-${subIdx}`}
                             to={subItem.link}
-                            onClick={() => setIsExploreOpen(false)}
+                            onClick={() => closeAllDropdowns()}
                             className="block px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors duration-200 relative overflow-hidden group"
                           >
                             <span className="relative z-10">{subItem.name}</span>

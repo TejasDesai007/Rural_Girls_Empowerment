@@ -574,9 +574,15 @@ Query: ${newPrompt}`;
               disabled={loading}
               className="flex-grow sm:flex-grow-0"
             >
-              {selectedLang === 'en-IN' ? "Clear" : "साफ करें"}
+              {{
+                'en-IN': "Clear",
+                'hi-IN': "साफ करें",
+                'mr-IN': "साफ करा",
+                'ta-IN': "தெளிவாக"
+              }[selectedLang] || "Clear"}
             </Button>
           </motion.div>
+
         </div>
       </motion.div>
     </motion.div>
