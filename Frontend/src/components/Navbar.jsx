@@ -414,7 +414,7 @@ export default function MainNavbar() {
   };
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full sticky top-0 z-50 bg-transparent dark:bg-neutral-900">
       <Navbar>
         {/* Desktop Navigation */}
         <NavBody>
