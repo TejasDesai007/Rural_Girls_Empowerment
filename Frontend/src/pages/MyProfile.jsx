@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogTrigger,
@@ -12,25 +12,46 @@ import {
 import { Button } from "@/components/ui/button";
 import { getAuth, onAuthStateChanged, updateProfile } from "firebase/auth";
 import { toast } from "react-hot-toast";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { 
-  Loader2, 
-  Trash, 
-  Eye, 
-  AlertTriangle, 
-  PlusCircle, 
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
+import {
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+} from "@/components/ui/avatar";
+import {
+  Loader2,
+  Trash,
+  Eye,
+  AlertTriangle,
+  PlusCircle,
   BookOpen,
   Briefcase,
   Edit,
   Save,
   X,
   Plus,
-  Pencil
+  Pencil,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
-import { getFirestore, collection, query, where, getDocs, doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
-import { useNavigate } from "react-router-dom";
-import { Link } from "react-router-dom";
+import {
+  getFirestore,
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  getDoc,
+  updateDoc,
+  deleteDoc,
+} from "firebase/firestore";
+import { useNavigate, Link } from "react-router-dom";
 
 export default function Profile() {
   const [user, setUser] = useState(null);
@@ -39,15 +60,23 @@ export default function Profile() {
   const [userToolkits, setUserToolkits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState({ id: null, type: null });
+  
+  // Show more/less state
+  const [showAllCourses, setShowAllCourses] = useState(false);
+  const [showAllToolkits, setShowAllToolkits] = useState(false);
+  const initialDisplayCount = 1; // Number of items to show initially
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     bio: "",
-    skills: []
+    skills: [],
   });
   const [newSkill, setNewSkill] = useState("");
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState({ id: null, type: null });
+  const nameInputRef = useRef(null);
+
   const navigate = useNavigate();
   const auth = getAuth();
   const db = getFirestore();
@@ -56,17 +85,16 @@ export default function Profile() {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        await fetchUserData(currentUser.uid);
-        await fetchUserCourses(currentUser.uid);
-        await fetchUserToolkits(currentUser.uid);
-        console.log(currentUser.uid);
-        // Initialize form data with current user info
-        setFormData({
+        await Promise.all([
+          fetchUserData(currentUser.uid),
+          fetchUserCourses(currentUser.uid),
+          fetchUserToolkits(currentUser.uid),
+        ]);
+        setFormData((prev) => ({
+          ...prev,
           name: currentUser.displayName || "",
           email: currentUser.email || "",
-          bio: "",
-          skills: []
-        });
+        }));
       } else {
         setUser(null);
         setUserData(null);
@@ -79,63 +107,46 @@ export default function Profile() {
     return () => unsubscribe();
   }, []);
 
-  const fetchUserData = async (userId) => {
+  const fetchUserData = async (uid) => {
     try {
-      const userRef = doc(db, "users", userId);
-      const userSnap = await getDoc(userRef);
-
-      if (userSnap.exists()) {
-        const data = userSnap.data();
+      const docRef = doc(db, "users", uid);
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const data = snap.data();
         setUserData(data);
-        console.log(data);
-        // Update form data with bio from Firestore
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           bio: data.bio || "",
-          skills: data.skills || []
+          skills: data.skills || [],
         }));
       } else {
         toast.error("User not found in Firestore");
       }
-    } catch (error) {
-      console.error("Error fetching user details from Firestore:", error);
-      toast.error("Failed to fetch user details");
+    } catch (err) {
+      console.error(err);
+      toast.error("Error fetching user data");
     }
   };
 
-  const fetchUserCourses = async (userId) => {
+  const fetchUserCourses = async (uid) => {
     try {
-      const coursesRef = collection(db, "courses");
-      const q = query(coursesRef, where("createdBy", "==", userId));
+      const q = query(collection(db, "courses"), where("instructorId", "==", uid));
       const querySnapshot = await getDocs(q);
-
-      const courses = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-
-      setUserCourses(courses);
-    } catch (error) {
-      console.error("Error fetching user courses from Firestore:", error);
-      toast.error("Failed to fetch user courses");
+      setUserCourses(querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+    } catch (err) {
+      console.error(err);
+      toast.error("Error fetching courses");
     }
   };
 
-  const fetchUserToolkits = async (userId) => {
+  const fetchUserToolkits = async (uid) => {
     try {
-      const toolkitsRef = collection(db, "toolkits");
-      const q = query(toolkitsRef, where("createdBy", "==", userId));
+      const q = query(collection(db, "toolkits"), where("CreatedBy", "==", uid));
       const querySnapshot = await getDocs(q);
-
-      const toolkits = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-
-      setUserToolkits(toolkits);
-    } catch (error) {
-      console.error("Error fetching user toolkits from Firestore:", error);
-      toast.error("Failed to fetch user toolkits");
+      setUserToolkits(querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+    } catch (err) {
+      console.error(err);
+      toast.error("Error fetching toolkits");
     }
   };
 
@@ -145,19 +156,21 @@ export default function Profile() {
   };
 
   const handleDelete = async () => {
+    const { id, type } = itemToDelete;
     try {
-      if (itemToDelete.type === 'course') {
-        await deleteDoc(doc(db, "courses", itemToDelete.id));
-        setUserCourses(userCourses.filter(course => course.id !== itemToDelete.id));
-        toast.success("Course deleted successfully!");
-      } else if (itemToDelete.type === 'toolkit') {
-        await deleteDoc(doc(db, "toolkits", itemToDelete.id));
-        setUserToolkits(userToolkits.filter(toolkit => toolkit.id !== itemToDelete.id));
-        toast.success("Toolkit deleted successfully!");
+      const ref = doc(db, type === "course" ? "courses" : "toolkits", id);
+      await deleteDoc(ref);
+
+      if (type === "course") {
+        setUserCourses((prev) => prev.filter((item) => item.id !== id));
+      } else {
+        setUserToolkits((prev) => prev.filter((item) => item.id !== id));
       }
-    } catch (error) {
-      console.error(`Error deleting ${itemToDelete.type}:`, error);
-      toast.error(`Failed to delete ${itemToDelete.type}`);
+
+      toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted`);
+    } catch (err) {
+      toast.error("Failed to delete item");
+      console.error(err);
     } finally {
       setDeleteDialogOpen(false);
       setItemToDelete({ id: null, type: null });
@@ -165,68 +178,81 @@ export default function Profile() {
   };
 
   const handleViewItem = (id, type) => {
-    if (type === 'course') {
-      navigate(`/courses/${id}`);
-    } else if (type === 'toolkit') {
-      navigate(`/toolkit/${id}`);
-    }
+    navigate(`/${type === "course" ? "courses" : "toolkit"}/${id}`);
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleAddSkill = () => {
-    if (newSkill.trim() && !formData.skills.includes(newSkill.trim())) {
-      setFormData(prev => ({
+    const skill = newSkill.trim();
+    if (skill && !formData.skills.includes(skill)) {
+      setFormData((prev) => ({
         ...prev,
-        skills: [...prev.skills, newSkill.trim()]
+        skills: [...prev.skills, skill],
       }));
-      setNewSkill("");
     }
+    setNewSkill("");
   };
 
   const handleRemoveSkill = (skillToRemove) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      skills: prev.skills.filter(skill => skill !== skillToRemove)
+      skills: prev.skills.filter((skill) => skill !== skillToRemove),
     }));
   };
 
   const handleSaveProfile = async () => {
     try {
       setEditing(true);
-
-      // Update Firebase Auth profile (name)
       if (formData.name !== user.displayName) {
-        await updateProfile(auth.currentUser, {
-          displayName: formData.name
-        });
+        await updateProfile(auth.currentUser, { displayName: formData.name });
       }
 
-      // Update Firestore user document
       const userRef = doc(db, "users", user.uid);
       await updateDoc(userRef, {
         name: formData.name,
         bio: formData.bio,
-        skills: formData.skills
+        skills: formData.skills,
       });
 
-      // Refresh user data
       await fetchUserData(user.uid);
-
-      toast.success("Profile updated successfully!");
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      toast.error(error.message);
+      toast.success("Profile updated!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Update failed");
     } finally {
       setEditing(false);
     }
   };
+
+  const getRoleBadgeColor = (role) => {
+    return {
+      admin: "bg-red-100 text-red-800",
+      mentor: "bg-green-100 text-green-800",
+    }[role] || "bg-gray-100 text-gray-800";
+  };
+
+  const formatDate = (timestamp) => {
+    return timestamp?.seconds
+      ? new Date(timestamp.seconds * 1000).toLocaleDateString()
+      : "N/A";
+  };
+
+  // Get the courses to display based on showAllCourses state
+  const displayedCourses = showAllCourses 
+    ? userCourses 
+    : userCourses.slice(0, initialDisplayCount);
+
+  // Get the toolkits to display based on showAllToolkits state
+  const displayedToolkits = showAllToolkits 
+    ? userToolkits 
+    : userToolkits.slice(0, initialDisplayCount);
 
   if (loading) {
     return (
@@ -244,18 +270,6 @@ export default function Profile() {
     );
   }
 
-  // Function to get appropriate role badge color
-  const getRoleBadgeColor = (role) => {
-    switch (role) {
-      case 'admin':
-        return 'bg-red-100 text-red-800';
-      case 'mentor':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <div className="flex flex-col md:flex-row gap-8">
@@ -271,7 +285,7 @@ export default function Profile() {
               </Avatar>
               <CardTitle className="text-center">{userData?.name || user.displayName || "User"}</CardTitle>
               <CardDescription className="text-center">{user.email}</CardDescription>
-              
+
               {/* Role Badge */}
               {userData?.role && (
                 <div className="mt-2">
@@ -303,7 +317,7 @@ export default function Profile() {
                 <DialogTrigger asChild>
                   <Button className="w-full flex items-center justify-center gap-2">
                     <Pencil size={16} />
-                    {/* Edit Profile */}
+                    Edit Profile
                   </Button>
                 </DialogTrigger>
 
@@ -425,13 +439,13 @@ export default function Profile() {
                 </div>
                 <Button onClick={() => navigate("/addcourse")} className="flex items-center gap-1">
                   <PlusCircle size={16} />
-                  {/* Add Course */}
+                  Add Course
                 </Button>
               </CardHeader>
               <CardContent>
                 {userCourses.length > 0 ? (
                   <div className="space-y-4">
-                    {userCourses.map(course => (
+                    {displayedCourses.map(course => (
                       <div key={course.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
                         <h3 className="font-medium">
                           <Link to={`/courses/${course.id}`} className="text-blue-600 hover:underline">
@@ -447,7 +461,7 @@ export default function Profile() {
                             {course.category}
                           </span>
                           <div className="flex gap-2">
-                            <Button 
+                            <Button
                               variant="outline"
                               size="sm"
                               onClick={() => handleViewItem(course.id, 'course')}
@@ -467,14 +481,37 @@ export default function Profile() {
                         </div>
                       </div>
                     ))}
+                    
+                    {/* Show More/Less Button for Courses */}
+                    {userCourses.length > initialDisplayCount && (
+                      <div className="flex justify-center mt-4">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setShowAllCourses(!showAllCourses)}
+                          className="flex items-center gap-2"
+                        >
+                          {showAllCourses ? (
+                            <>
+                              <ChevronUp size={16} />
+                              Show Less
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown size={16} />
+                              Show More ({userCourses.length - initialDisplayCount} more)
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-8">
                     <p className="text-gray-500">You haven't created any courses yet</p>
-                    {/* <Button className="mt-4 flex items-center gap-2" onClick={() => navigate("/addcourse")}>
-                      <PlusCircle size={16} /> */}
-                      {/* Create Your First Course */}
-                    {/* </Button> */}
+                    <Button className="mt-4 flex items-center gap-2" onClick={() => navigate("/addcourse")}>
+                      <PlusCircle size={16} />
+                      Create Your First Course
+                    </Button>
                   </div>
                 )}
               </CardContent>
@@ -494,13 +531,13 @@ export default function Profile() {
                 </div>
                 <Button onClick={() => navigate("/add-toolkit")} className="flex items-center gap-1">
                   <PlusCircle size={16} />
-                  {/* Add Toolkit */}
+                  Add Toolkit
                 </Button>
               </CardHeader>
               <CardContent>
                 {userToolkits.length > 0 ? (
                   <div className="space-y-4">
-                    {userToolkits.map(toolkit => (
+                    {displayedToolkits.map(toolkit => (
                       <div key={toolkit.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
                         <h3 className="font-medium">
                           <Link to={`/toolkit/${toolkit.id}`} className="text-blue-600 hover:underline">
@@ -516,7 +553,7 @@ export default function Profile() {
                             {toolkit.category}
                           </span>
                           <div className="flex gap-2">
-                            <Button 
+                            <Button
                               variant="outline"
                               size="sm"
                               onClick={() => handleViewItem(toolkit.id, 'toolkit')}
@@ -536,14 +573,37 @@ export default function Profile() {
                         </div>
                       </div>
                     ))}
+                    
+                    {/* Show More/Less Button for Toolkits */}
+                    {userToolkits.length > initialDisplayCount && (
+                      <div className="flex justify-center mt-4">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setShowAllToolkits(!showAllToolkits)}
+                          className="flex items-center gap-2"
+                        >
+                          {showAllToolkits ? (
+                            <>
+                              <ChevronUp size={16} />
+                              Show Less
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown size={16} />
+                              Show More ({userToolkits.length - initialDisplayCount} more)
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-8">
                     <p className="text-gray-500">You haven't created any toolkits yet</p>
-                    {/* <Button className="mt-4 flex items-center gap-2" onClick={() => navigate("/add-toolkit")}>
-                      <PlusCircle size={16} /> */}
-                      {/* Create Your First Toolkit */}
-                    {/* </Button> */}
+                    <Button className="mt-4 flex items-center gap-2" onClick={() => navigate("/add-toolkit")}>
+                      <PlusCircle size={16} />
+                      Create Your First Toolkit
+                    </Button>
                   </div>
                 )}
               </CardContent>
