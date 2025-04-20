@@ -110,8 +110,8 @@ const EntrepreneurDashboard = () => {
                   index % 3 === 0
                     ? "linear-gradient(to right, #ff9a9e, #fad0c4)"
                     : index % 3 === 1
-                    ? "linear-gradient(to right, #a18cd1, #fbc2eb)"
-                    : "linear-gradient(to right, #fbc2eb, #a6c1ee)",
+                      ? "linear-gradient(to right, #a18cd1, #fbc2eb)"
+                      : "linear-gradient(to right, #fbc2eb, #a6c1ee)",
                 width: `${Math.random() * 100 + 50}px`,
                 height: `${Math.random() * 100 + 50}px`,
                 left: `${Math.random() * 100}%`,
@@ -258,29 +258,66 @@ const EntrepreneurDashboard = () => {
               </div>
             </div>
             <div className="flex gap-3 items-center">
-              <Link to="/entrepreneurship-corner">
-                <Badge
-                  variant="outline"
-                  className="bg-gradient-to-r from-green-100 to-emerald-100 border-green-300 text-green-700 rounded-full px-4 py-1 flex items-center gap-1 cursor-pointer hover:shadow-md transition"
-                >
-                  <motion.div
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
+              <Link to="/entrepreneurship-corner" className="block">
+                <div className="relative overflow-hidden rounded-full p-px group">
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-r from-green-400 via-emerald-500 to-teal-400 rounded-full transition-opacity duration-300 animate-gradient-x"></div>
+                  <Badge
+                    variant="outline"
+                    className="bg-gradient-to-r from-green-100 to-emerald-100 border-green-300 text-green-700 rounded-full px-6 py-2 flex items-center gap-2 cursor-pointer hover:shadow-lg transition-all duration-300 w-full justify-center text-base font-medium relative z-10"
                   >
-                    <Star className="h-3 w-3 text-green-600" />
-                  </motion.div>
-                  Active Entrepreneur
-                </Badge>
+                    <motion.div
+                      animate={{
+                        scale: [1, 1.2, 1]
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                    >
+                      <Star className="h-4 w-4 text-green-600" />
+                    </motion.div>
+                    Active Entrepreneur
+                  </Badge>
+                </div>
+                <style jsx>{`
+        @keyframes gradient-x {
+          0% {
+            background-position: 0% 50%;
+          }
+          25% {
+            background-position: 100% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          75% {
+            background-position: 0% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
+        }
+        .animate-gradient-x {
+          background-size: 300% 100%;
+          animation: gradient-x 6s ease-out forwards;
+        }
+        .group:hover .animate-gradient-x {
+          animation: gradient-x 6s ease-out infinite;
+        }
+      `}</style>
               </Link>
-              <Button className="bg-gradient-to-r from-pink-400 to-fuchsia-500 hover:from-pink-500 hover:to-fuchsia-600 text-white rounded-full px-5 shadow-lg shadow-pink-200 transition duration-300 flex items-center gap-2">
-                <motion.div
-                  animate={{ y: [0, -2, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                >
-                  <Sparkles className="h-4 w-4" />
-                </motion.div>
-                Help Center
-              </Button>
+              <Link to="/chat-assistant">
+                <Button className="bg-gradient-to-r from-pink-400 to-fuchsia-500 hover:from-pink-500 hover:to-fuchsia-600 text-white rounded-full px-5 shadow-lg shadow-pink-200 transition duration-300 flex items-center gap-2">
+                  <motion.div
+                    animate={{ y: [0, -2, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    <Sparkles className="h-4 w-4" />
+                  </motion.div>
+                  Need Assistance?
+                </Button>
+              </Link>
             </div>
           </motion.header>
 
@@ -308,11 +345,10 @@ const EntrepreneurDashboard = () => {
                   >
                     <TabsTrigger
                       value={key}
-                      className={`rounded-full px-5 py-2 text-sm font-semibold transition-all duration-300 ${
-                        activeTab === key
-                          ? "bg-gradient-to-r from-pink-400 to-fuchsia-500 text-white shadow-lg shadow-pink-200/50"
-                          : "bg-white/70 text-pink-600 border border-pink-200 hover:bg-pink-50"
-                      }`}
+                      className={`rounded-full px-5 py-2 text-sm font-semibold transition-all duration-300 ${activeTab === key
+                        ? "bg-gradient-to-r from-pink-400 to-fuchsia-500 text-white shadow-lg shadow-pink-200/50"
+                        : "bg-white/70 text-pink-600 border border-pink-200 hover:bg-pink-50"
+                        }`}
                     >
                       <span className="mr-2">{icon}</span>
                       {label}
