@@ -1,15 +1,20 @@
 // src/pages/Home.jsx
-import React, { lazy, Suspense, useState, useEffect } from "react";
+import React, { lazy, Suspense, useState, useEffect, useRef } from "react";
 import { cn } from '../lib/utils';
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useInView } from "framer-motion";
 import {
   Map, UserCheck, Code2, Sparkles, MousePointerClick,
   ChevronLeft, ChevronRight, ArrowRight
 } from "lucide-react";
 import CountUp from 'react-countup';
 
+const stats = [
+  { number: "5000+", label: "Girls Empowered" },
+  { number: "200+", label: "Communities Reached" },
+  { number: "98%", label: "Satisfaction Rate" },
+];
 
 // Lazy-loaded components
 const BentoGrid = lazy(() => import("../components/ui/bento-grid").then(module => ({
@@ -349,37 +354,50 @@ const CallToActionSection = () => {
 
         {/* Floating stats */}
         <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-8">
-          {[
-            { number: "5,000+", label: "Girls Empowered" },
-            { number: "200+", label: "Communities Reached" },
-            { number: "98%", label: "Satisfaction Rate" }
-          ].map((stat, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 + index * 0.2 }}
-              viewport={{ once: true }}
-              className="bg-white/10 backdrop-blur-sm rounded-xl p-6"
-            >
-              <motion.h3
-                className="text-3xl font-bold text-white"
-                whileInView={{ scale: [0.9, 1.1, 1] }}
-                transition={{ duration: 0.8, delay: 0.8 + index * 0.2 }}
-                viewport={{ once: true }}
-              >
-                <CountUp
-                  start={0}
-                  end={parseFloat(stat.number.replace(/[^\d]/g, ''))}
-                  duration={2}
-                  separator=","
-                  suffix={stat.number.includes("+") ? "+" : stat.number.includes("%") ? "%" : ""}
-                />
-              </motion.h3>
-              <p className="text-white/80">{stat.label}</p>
-            </motion.div>
+          {stats.map((stat, index) => {
+            const ref = useRef(null);
+            const isInView = useInView(ref, { once: true });
+            const [shouldCount, setShouldCount] = useState(false);
 
-          ))}
+            useEffect(() => {
+              if (isInView) {
+                setShouldCount(true);
+              }
+            }, [isInView]);
+
+            const isPercent = stat.number.includes("%");
+            const isPlus = stat.number.includes("+");
+
+            return (
+              <motion.div
+                ref={ref}
+                key={index}
+                initial={{ opacity: 0, y: 30 }}
+                animate={isInView ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.6, delay: 0.2 + index * 0.2 }}
+                className="bg-white/10 backdrop-blur-sm rounded-xl p-6 text-center"
+              >
+                <motion.h3
+                  className="text-3xl font-bold text-white"
+                  animate={isInView ? { scale: [0.9, 1.05, 1] } : {}}
+                  transition={{ duration: 0.8, delay: 0.8 + index * 0.2 }}
+                >
+                  {shouldCount ? (
+                    <CountUp
+                      start={0}
+                      end={parseFloat(stat.number.replace(/[^\d.]/g, ""))}
+                      duration={2}
+                      separator=","
+                      suffix={isPercent ? "%" : isPlus ? "+" : ""}
+                    />
+                  ) : (
+                    "0"
+                  )}
+                </motion.h3>
+                <p className="text-white/80 mt-1">{stat.label}</p>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </section>

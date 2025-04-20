@@ -298,26 +298,37 @@ export default function MainNavbar() {
             link: "/career",
           },
         ];
-      case "mentor":
-        return [
-          {
-            name: "Dashboard",
-            link: "/mentor-dashboard",
-          },
-          {
-            name: "Explore",
-            dropdown: true,
-            items: exploreItems,
-          },
-          {
-            name: "Add Toolkits",
-            link: "/add-toolkit",
-          },
-          {
-            name: "Career",
-            link: "/career",
-          },
-        ];
+        case "mentor":
+          return [
+            {
+              name: "Dashboard",
+              link: "/mentor-dashboard",
+            },
+            {
+              name: "Explore",
+              dropdown: true,
+              items: exploreItems,
+            },
+            {
+              name: "Manage",
+              dropdown: true,
+              items: [
+                {
+                  name: "Add Toolkits",
+                  link: "/add-toolkit",
+                },
+                {
+                  name: "Career",
+                  link: "/career",
+                },
+                {
+                  name: "Requests",
+                  link: "/mentor-requests",
+                },
+              ],
+            },
+          ];
+        
       case "admin":
         return [
           {
