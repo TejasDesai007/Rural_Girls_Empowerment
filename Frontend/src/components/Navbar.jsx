@@ -346,7 +346,40 @@ export default function MainNavbar() {
             link: "/career",
           },
         ];
-      default:
+        default:
+          return [
+            {
+              name: "Home",
+              link: "/",
+            },
+            {
+              name: "Explore",
+              dropdown: true,
+              items: [
+                {
+                  name: "Courses",
+                  link: "/courses",
+                },
+                {
+                  name: "Mentorship",
+                  link: "/mentor-match",
+                },
+                {
+                  name: "Toolkits",
+                  link: "/toolkit",
+                },
+                {
+                  name: "Entrepreneur Tools",
+                  link: "/Entrepreneurship",
+                },
+              ],
+            },
+            {
+              name: "AI Assistant",
+              link: "/chat-assistant",
+            },
+          ];
+        
         return [
           {
             name: "Home",
