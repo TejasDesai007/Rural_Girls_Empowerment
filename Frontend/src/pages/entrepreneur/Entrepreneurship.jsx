@@ -3,17 +3,12 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { toast } from "react-toastify";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Heart, Star } from "lucide-react";
-
+import { Link } from 'react-router-dom'
 // Tab Components
 import DashboardTab from "./tabs/DashboardTab";
 import ProductsTab from "./tabs/ProductsTab";
@@ -63,12 +58,27 @@ const EntrepreneurDashboard = () => {
   };
 
   const tabs = [
-    { key: "dashboard", label: "Dashboard", Component: DashboardTab, icon: "✨" },
-    { key: "products", label: "My Products", Component: ProductsTab, icon: "🌸" },
+    {
+      key: "dashboard",
+      label: "Dashboard",
+      Component: DashboardTab,
+      icon: "✨",
+    },
+    {
+      key: "products",
+      label: "My Products",
+      Component: ProductsTab,
+      icon: "🌸",
+    },
     { key: "sells", label: "My Sells", Component: MySellsTab, icon: "💖" },
     { key: "orders", label: "Orders", Component: OrdersTab, icon: "📦" },
     { key: "cart", label: "Cart", Component: CartTab, icon: "🛒" },
-    { key: "marketplace", label: "Marketplace", Component: MarketplaceTab, icon: "🏪" },
+    {
+      key: "marketplace",
+      label: "Marketplace",
+      Component: MarketplaceTab,
+      icon: "🏪",
+    },
   ];
 
   // Loading state
@@ -88,10 +98,39 @@ const EntrepreneurDashboard = () => {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-
-      {/* Simple Blurred Background */}
-      <div className="fixed inset-0 bg-gradient-to-br from-pink-100 via-purple-50 to-fuchsia-100 opacity-80 z-0 backdrop-blur-md">
-        {/* No floating elements */}
+      {/* Animated Background Elements */}
+      <div className="fixed inset-0 bg-gradient-to-br from-pink-100 via-purple-50 to-fuchsia-100 opacity-80 z-0">
+        {mounted &&
+          floatingElements.map((_, index) => (
+            <motion.div
+              key={index}
+              className="absolute rounded-full opacity-30"
+              style={{
+                background:
+                  index % 3 === 0
+                    ? "linear-gradient(to right, #ff9a9e, #fad0c4)"
+                    : index % 3 === 1
+                    ? "linear-gradient(to right, #a18cd1, #fbc2eb)"
+                    : "linear-gradient(to right, #fbc2eb, #a6c1ee)",
+                width: `${Math.random() * 100 + 50}px`,
+                height: `${Math.random() * 100 + 50}px`,
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+              }}
+              animate={{
+                x: [0, Math.random() * 50 - 25],
+                y: [0, Math.random() * 50 - 25],
+                scale: [1, Math.random() * 0.4 + 0.8],
+                opacity: [0.2, 0.4, 0.2],
+              }}
+              transition={{
+                duration: Math.random() * 8 + 10,
+                repeat: Infinity,
+                repeatType: "reverse",
+                ease: "easeInOut",
+              }}
+            />
+          ))}
       </div>
 
       {!isAuthenticated ? (
@@ -199,7 +238,12 @@ const EntrepreneurDashboard = () => {
               <motion.div
                 initial={{ rotate: 0, scale: 1 }}
                 animate={{ rotate: 360, scale: [1, 1.2, 1] }}
-                transition={{ duration: 3, repeat: Infinity, repeatType: "loop", ease: "easeInOut" }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  repeatType: "loop",
+                  ease: "easeInOut",
+                }}
                 className="text-4xl drop-shadow-lg"
               >
                 🌸
@@ -208,22 +252,26 @@ const EntrepreneurDashboard = () => {
                 <h1 className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-purple-600 tracking-tight">
                   My Business Dashboard
                 </h1>
-                <p className="text-sm font-medium text-pink-600 mt-1">Welcome back, beautiful entrepreneur!</p>
+                <p className="text-sm font-medium text-pink-600 mt-1">
+                  Welcome back, beautiful entrepreneur!
+                </p>
               </div>
             </div>
             <div className="flex gap-3 items-center">
-              <Badge
-                variant="outline"
-                className="bg-gradient-to-r from-green-100 to-emerald-100 border-green-300 text-green-700 rounded-full px-4 py-1 flex items-center gap-1"
-              >
-                <motion.div
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
+              <Link to="/entrepreneurship-corner">
+                <Badge
+                  variant="outline"
+                  className="bg-gradient-to-r from-green-100 to-emerald-100 border-green-300 text-green-700 rounded-full px-4 py-1 flex items-center gap-1 cursor-pointer hover:shadow-md transition"
                 >
-                  <Star className="h-3 w-3 text-green-600" />
-                </motion.div>
-                Active Entrepreneur
-              </Badge>
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <Star className="h-3 w-3 text-green-600" />
+                  </motion.div>
+                  Active Entrepreneur
+                </Badge>
+              </Link>
               <Button className="bg-gradient-to-r from-pink-400 to-fuchsia-500 hover:from-pink-500 hover:to-fuchsia-600 text-white rounded-full px-5 shadow-lg shadow-pink-200 transition duration-300 flex items-center gap-2">
                 <motion.div
                   animate={{ y: [0, -2, 0] }}
@@ -260,10 +308,11 @@ const EntrepreneurDashboard = () => {
                   >
                     <TabsTrigger
                       value={key}
-                      className={`rounded-full px-5 py-2 text-sm font-semibold transition-all duration-300 ${activeTab === key
-                        ? "bg-gradient-to-r from-pink-400 to-fuchsia-500 text-white shadow-lg shadow-pink-200/50"
-                        : "bg-white/70 text-pink-600 border border-pink-200 hover:bg-pink-50"
-                        }`}
+                      className={`rounded-full px-5 py-2 text-sm font-semibold transition-all duration-300 ${
+                        activeTab === key
+                          ? "bg-gradient-to-r from-pink-400 to-fuchsia-500 text-white shadow-lg shadow-pink-200/50"
+                          : "bg-white/70 text-pink-600 border border-pink-200 hover:bg-pink-50"
+                      }`}
                     >
                       <span className="mr-2">{icon}</span>
                       {label}
