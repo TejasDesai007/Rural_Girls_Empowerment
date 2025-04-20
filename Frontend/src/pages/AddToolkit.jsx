@@ -7,9 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertCircle, CheckCircle2, Upload, X, Plus, FileType } from "lucide-react";
 import axios from "axios";
-import { auth, db } from "../firebase"; // Assuming you're using Firestore for roles
+import { auth, db } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
 
 const API_URL = "http://localhost:5000/api";
 
@@ -25,18 +26,18 @@ export default function AddToolkit() {
   const [newCategory, setNewCategory] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStatus, setUploadStatus] = useState(null); // "success", "error", null
+  const [uploadStatus, setUploadStatus] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
-  const [isAuthorized, setIsAuthorized] = useState(false); // Track if user has mentor role
-  const [user, setUser] = useState(null); // Store user details
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     let isMounted = true;
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user && isMounted) {
-        // Fetch the user's role from Firestore
-        const userDoc = await getDoc(doc(db, "users", user.uid)); // Assuming 'users' collection
+        const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
           const userData = userDoc.data();
           if (userData.role === "mentor" || userData.role === "admin") {
@@ -44,15 +45,15 @@ export default function AddToolkit() {
             setUser(user);
           } else {
             setIsAuthorized(false);
-            navigate("/unauthorized"); // Redirect to unauthorized page
+            navigate("/unauthorized");
           }
         } else {
           setIsAuthorized(false);
-          navigate("/unauthorized"); // Redirect if no user data exists
+          navigate("/unauthorized");
         }
       } else {
         setIsAuthorized(false);
-        navigate("/login"); // Redirect to login page if not authenticated
+        navigate("/login");
       }
     });
 
@@ -60,7 +61,7 @@ export default function AddToolkit() {
       isMounted = false;
       unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   const handleChange = useCallback((e) => {
     const { name, value, files } = e.target;
@@ -88,88 +89,91 @@ export default function AddToolkit() {
     }));
   }, []);
 
-  const handleSubmit = useCallback(async (e) => {
-    e.preventDefault();
-    setErrorMessage("");
-    setUploadStatus(null);
-    setUploading(true);
+  const handleSubmit = useCallback(
+    async (e) => {
+      e.preventDefault();
+      setErrorMessage("");
+      setUploadStatus(null);
+      setUploading(true);
 
-    try {
-      const formData = new FormData();
-      formData.append("title", form.title);
-      formData.append("description", form.description);
-      formData.append("category", JSON.stringify(form.category));
+      try {
+        const formData = new FormData();
+        formData.append("title", form.title);
+        formData.append("description", form.description);
+        formData.append("category", JSON.stringify(form.category));
+        formData.append("createdBy", user.uid); // ADD createdBy field here
 
-      Array.from(form.files).forEach((file) => {
-        formData.append("files", file);
-      });
+        Array.from(form.files).forEach((file) => {
+          formData.append("files", file);
+        });
 
-      const response = await axios.post(`${API_URL}/toolkit`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
-          );
-          setUploadProgress(percentCompleted);
-        },
-      });
+        const response = await axios.post(`${API_URL}/toolkit`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            setUploadProgress(percentCompleted);
+          },
+        });
 
-      console.log("Toolkit created:", response.data);
-      setUploadStatus("success");
-      setForm(initialFormState);
-      setNewCategory("");
-      document.getElementById("files").value = "";
-    } catch (error) {
-      console.error("Error:", error);
-      setUploadStatus("error");
-      setErrorMessage(error.response?.data?.message || "Upload failed");
-    } finally {
-      setUploading(false);
-    }
-  }, [form]);
+        console.log("Toolkit created:", response.data);
+        setUploadStatus("success");
+        setForm(initialFormState);
+        setNewCategory("");
+        document.getElementById("files").value = "";
+      } catch (error) {
+        console.error("Error:", error);
+        setUploadStatus("error");
+        setErrorMessage(error.response?.data?.message || "Upload failed");
+      } finally {
+        setUploading(false);
+      }
+    },
+    [form, user]
+  );
 
-  if (!isAuthorized) {
-    return null; // Return nothing or a loading state until the role is confirmed
-  }
+  if (!isAuthorized) return null;
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-50 to-blue-100 relative overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <motion.div 
+        <motion.div
           className="absolute -top-20 -left-20 w-64 h-64 rounded-full bg-pink-200 opacity-20 blur-3xl"
-          animate={{ 
-            x: [0, 20, 0], 
+          animate={{
+            x: [0, 20, 0],
             y: [0, 30, 0],
           }}
-          transition={{ 
-            duration: 15, 
+          transition={{
+            duration: 15,
             repeat: Infinity,
-            repeatType: "reverse" 
+            repeatType: "reverse"
           }}
         />
-        <motion.div 
+        <motion.div
           className="absolute top-1/2 -right-32 w-96 h-96 rounded-full bg-purple-300 opacity-20 blur-3xl"
-          animate={{ 
-            x: [0, -40, 0], 
+          animate={{
+            x: [0, -40, 0],
             y: [0, 50, 0],
           }}
-          transition={{ 
-            duration: 20, 
+          transition={{
+            duration: 20,
             repeat: Infinity,
-            repeatType: "reverse" 
+            repeatType: "reverse"
           }}
         />
-        <motion.div 
+        <motion.div
           className="absolute -bottom-20 left-1/3 w-72 h-72 rounded-full bg-blue-200 opacity-20 blur-3xl"
-          animate={{ 
-            x: [0, 30, 0], 
+          animate={{
+            x: [0, 30, 0],
             y: [0, -20, 0],
           }}
-          transition={{ 
-            duration: 18, 
+          transition={{
+            duration: 18,
             repeat: Infinity,
-            repeatType: "reverse" 
+            repeatType: "reverse"
           }}
         />
       </div>
@@ -289,7 +293,7 @@ export default function AddToolkit() {
                     </Button>
                   </div>
                   {form.category.length > 0 ? (
-                    <motion.div 
+                    <motion.div
                       className="flex flex-wrap gap-2"
                       layout
                     >
@@ -344,8 +348,8 @@ export default function AddToolkit() {
                       accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
                       className="hidden"
                     />
-                    <Button 
-                      type="button" 
+                    <Button
+                      type="button"
                       variant="outline"
                       className="mt-2 border-pink-300 text-pink-600 hover:bg-pink-100"
                       onClick={() => document.getElementById('files').click()}
@@ -355,7 +359,7 @@ export default function AddToolkit() {
                     </Button>
                   </div>
                   {form.files.length > 0 && (
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="mt-4 flex flex-wrap gap-2"
@@ -364,7 +368,7 @@ export default function AddToolkit() {
                         Selected: {form.files.length} file(s)
                       </p>
                       {Array.from(form.files).map((file, index) => (
-                        <div 
+                        <div
                           key={index}
                           className="text-xs bg-white px-2 py-1 rounded border border-pink-200 text-gray-600"
                         >
@@ -376,7 +380,7 @@ export default function AddToolkit() {
                 </motion.div>
 
                 {uploading && (
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     className="w-full"
@@ -410,7 +414,7 @@ export default function AddToolkit() {
                   >
                     {uploading ? (
                       <span className="flex items-center justify-center gap-2">
-                        <motion.span 
+                        <motion.span
                           className="h-5 w-5 border-2 border-white border-t-transparent rounded-full"
                           animate={{ rotate: 360 }}
                           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
