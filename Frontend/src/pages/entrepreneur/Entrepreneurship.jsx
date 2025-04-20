@@ -354,23 +354,6 @@ const EntrepreneurDashboard = () => {
             </motion.div>
           </Tabs>
 
-          {/* Footer */}
-          <motion.footer
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8, duration: 0.8 }}
-            className="mt-10 text-center"
-          >
-            <div className="inline-flex items-center gap-2 text-pink-600 font-medium">
-              <motion.div
-                animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                <Heart className="h-4 w-4 text-pink-500" />
-              </motion.div>
-              Created with love for amazing entrepreneurs
-            </div>
-          </motion.footer>
         </motion.div>
       )}
     </div>
