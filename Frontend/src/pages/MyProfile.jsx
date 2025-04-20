@@ -132,9 +132,10 @@ export default function Profile() {
 
   const fetchUserCourses = async (uid) => {
     try {
-      const q = query(collection(db, "courses"), where("instructorId", "==", uid));
+      const q = query(collection(db, "courses"), where("createdBy", "==", uid));
       const querySnapshot = await getDocs(q);
       setUserCourses(querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      console.log();
     } catch (err) {
       console.error(err);
       toast.error("Error fetching courses");
@@ -143,9 +144,10 @@ export default function Profile() {
 
   const fetchUserToolkits = async (uid) => {
     try {
-      const q = query(collection(db, "toolkits"), where("CreatedBy", "==", uid));
+      const q = query(collection(db, "toolkits"), where("createdBy", "==", uid));
       const querySnapshot = await getDocs(q);
       setUserToolkits(querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      console.log(userToolkits);
     } catch (err) {
       console.error(err);
       toast.error("Error fetching toolkits");

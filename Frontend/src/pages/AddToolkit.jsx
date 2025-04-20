@@ -101,8 +101,8 @@ export default function AddToolkit() {
         formData.append("title", form.title);
         formData.append("description", form.description);
         formData.append("category", JSON.stringify(form.category));
-        formData.append("createdBy", user.uid); // ADD createdBy field here
-
+        formData.append("createdBy", user?.uid); // ADD createdBy field here
+        
         Array.from(form.files).forEach((file) => {
           formData.append("files", file);
         });
