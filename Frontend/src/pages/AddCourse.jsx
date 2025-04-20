@@ -12,6 +12,8 @@ import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase";
 import { useRef } from "react";
 
+import { motion } from "framer-motion";
+
 export default function AddCourse() {
   const navigate = useNavigate();
   const lessonVideoInputRef = useRef(null);
@@ -434,10 +436,29 @@ export default function AddCourse() {
         </Card>
 
         <div className="flex justify-end">
-          <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
+          <motion.button
+            type="submit"
+            className="mt-5 inline-flex items-center justify-center px-8 py-3 font-semibold text-white bg-gradient-to-r from-purple-500 via-indigo-600 to-purple-700 rounded-2xl shadow-lg"
+            initial={{ backgroundPosition: '200% 0%' }}
+            whileHover={{
+              backgroundPosition: '0% 100%',
+              transition: {
+                type: "spring",
+                stiffness: 100,
+                damping: 30,
+                duration: 3,
+                ease: "easeInOut"
+              }
+            }}
+            style={{
+              backgroundSize: '200% 200%',
+              backgroundImage: 'linear-gradient(to right, #9b4d96, #4c6eb1, #7f3fb2)',
+            }}
+          >
             Save & Publish
-          </Button>
+          </motion.button>
         </div>
+
       </form>
     </div>
   );
