@@ -9,9 +9,7 @@ import { addDoc, collection, getDocs } from "firebase/firestore";
 import { toast } from "react-hot-toast";
 import { CheckCircle, Calendar, ArrowLeft, UserCircle } from "lucide-react"; 
 
-import { HoverEffect } from "../components/ui/card-hover-effect";
 import { CardContainer, CardBody, CardItem } from "../components/ui/3d-card";
-import { cn } from "@/lib/utils"; // Assuming cn is a utility function for combining classNames
 
 const MentorMatch = () => {
   const [selectedMentor, setSelectedMentor] = useState(null);

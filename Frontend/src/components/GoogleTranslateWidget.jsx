@@ -1,5 +1,5 @@
-// src/components/GoogleTranslateWidget.jsx
 import { useEffect } from "react";
+import { HoverBorderGradient } from "../components/ui/hover-border-gradient";
 
 const GoogleTranslateWidget = () => {
   useEffect(() => {
@@ -42,17 +42,21 @@ const GoogleTranslateWidget = () => {
 
   return (
     <div>
-      {/* Custom Button */}
-      <div
-        className="fixed bottom-6 right-6 z-50 flex items-center space-x-2 p-2 bg-white rounded-lg shadow-lg cursor-pointer"
-        onClick={handleTranslateClick}
-      >
-        <img
-          src="https://cdn1.iconfinder.com/data/icons/google-s-logo/150/Google_Icons-09-1024.png" // Google logo URL
-          alt="Google Logo"
-          className="w-6 h-6" // Size of the logo
-        />
-        <span className="font-medium text-sm">Translate</span>
+      {/* Custom Button with imported HoverBorderGradient */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <HoverBorderGradient
+          containerClassName="rounded-full"
+          as="button"
+          className="bg-white text-black flex items-center space-x-2"
+          onClick={handleTranslateClick}
+        >
+          <img
+            src="https://cdn1.iconfinder.com/data/icons/google-s-logo/150/Google_Icons-09-1024.png"
+            alt="Google Logo"
+            className="w-6 h-6"
+          />
+          <span className="font-medium text-sm">Translate</span>
+        </HoverBorderGradient>
       </div>
 
       {/* Google Translate Widget (conditionally rendered) */}

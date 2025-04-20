@@ -8,6 +8,8 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
+import { motion } from "framer-motion";
+
 const ScheduleSection = ({ selectedMentor, menteeId, onBooked, onBack, isBooking: parentIsBooking }) => {
   const [date, setDate] = useState(() => {
     // Set initial date to tomorrow to avoid past dates
@@ -100,7 +102,7 @@ const ScheduleSection = ({ selectedMentor, menteeId, onBooked, onBack, isBooking
       // Pass the booking data to the parent component for notification creation
       // Instead of directly adding to mentorship_requests
       onBooked(bookingData);
-      
+
       toast.success(`Booking request sent to ${selectedMentor.name}!`, {
         description: "You'll be notified when they respond."
       });
@@ -117,32 +119,35 @@ const ScheduleSection = ({ selectedMentor, menteeId, onBooked, onBack, isBooking
 
   return (
     <div className="mt-16">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-semibold">
+      <div className="flex justify-between items-center mb-8">
+        <h2 className="text-3xl font-bold text-purple-800">
           Schedule with {selectedMentor.name}
         </h2>
       </div>
-      <div className="grid md:grid-cols-2 gap-6">
-        <div>
+      <div className="grid md:grid-cols-2 gap-8 bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-xl shadow-sm">
+        <div className="bg-white rounded-xl shadow-md p-4">
           <Calendar
             mode="single"
             selected={date}
             onSelect={setDate}
-            className="rounded-md border"
+            className="rounded-lg border-purple-200"
             disabled={(date) => date < new Date()}
             fromDate={new Date()}
           />
         </div>
-        <div className="space-y-6">
+        <div className="space-y-6 p-4">
           <div>
-            <p className="font-medium mb-2">Select a Time Slot</p>
+            <p className="font-semibold mb-3 text-purple-700">Select a Time Slot</p>
             <div className="grid grid-cols-2 gap-3">
               {["10:00 AM", "11:30 AM", "2:00 PM", "4:00 PM"].map((slot) => (
                 <Button
                   key={slot}
                   variant={timeSlot === slot ? "default" : "outline"}
                   onClick={() => setTimeSlot(slot)}
-                  className="flex items-center gap-2"
+                  className={`flex items-center justify-center gap-2 rounded-lg transition-all ${timeSlot === slot
+                    ? "bg-purple-600 hover:bg-purple-700 text-white"
+                    : "border-purple-300 hover:bg-purple-100 text-purple-700"
+                    }`}
                   disabled={isCheckingAvailability || displayIsBooking}
                 >
                   <Clock size={16} />
@@ -153,41 +158,55 @@ const ScheduleSection = ({ selectedMentor, menteeId, onBooked, onBack, isBooking
           </div>
 
           {timeSlot && (
-            <div className="space-y-2">
+            <div className="bg-purple-50 p-4 rounded-lg border border-purple-200 space-y-2">
               <div className="flex items-center gap-2 text-sm">
-                <span className="font-medium">Selected:</span>
-                <span>
+                <span className="font-semibold text-purple-800">Selected:</span>
+                <span className="text-purple-700">
                   {date.toLocaleDateString()} at {timeSlot}
                 </span>
               </div>
               {!isAvailable && (
-                <p className="text-sm text-red-500">
+                <p className="text-sm text-pink-600 flex items-center gap-1">
+                  <span className="inline-block w-2 h-2 bg-pink-600 rounded-full"></span>
                   This slot is unavailable - {selectedMentor.name} has a conflicting session
                 </p>
               )}
             </div>
           )}
 
-          <Button
-            className="w-full"
-            size="lg"
+          <motion.button
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.97 }}
+            transition={{ type: "spring", stiffness: 300, damping: 15 }}
+            className="w-full relative overflow-hidden bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white font-medium rounded-xl shadow-lg transition-all px-6 py-3"
             onClick={handleBookSession}
             disabled={!timeSlot || !isAvailable || isCheckingAvailability || displayIsBooking}
           >
-            {displayIsBooking ? (
-              <span className="flex items-center gap-2">
-                <Clock className="animate-spin" size={16} />
-                Booking...
-              </span>
-            ) : isCheckingAvailability ? (
-              <span className="flex items-center gap-2">
-                <Clock className="animate-spin" size={16} />
-                Checking availability...
-              </span>
-            ) : (
-              "Confirm Booking"
-            )}
-          </Button>
+            {/* Glow effect */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileHover={{ opacity: 0.15, scale: 1.2 }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              className="absolute inset-0 bg-white rounded-xl blur-xl"
+            />
+
+            {/* Text + Icon */}
+            <span className="relative z-10 flex items-center justify-center gap-2">
+              {displayIsBooking ? (
+                <>
+                  <Clock className="animate-spin" size={16} />
+                  Booking...
+                </>
+              ) : isCheckingAvailability ? (
+                <>
+                  <Clock className="animate-spin" size={16} />
+                  Checking availability...
+                </>
+              ) : (
+                "Confirm Booking"
+              )}
+            </span>
+          </motion.button>
 
         </div>
       </div>

@@ -21,6 +21,7 @@ import {
 } from "@tabler/icons-react";
 
 import logo from "../assets/icons/logo.png";
+import { LinkPreview } from "@/components/ui/link-preview";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -199,7 +200,7 @@ const Login = () => {
                 className="group/btn relative flex h-12 w-full items-center justify-center space-x-2 rounded-lg bg-white px-4 font-medium text-black shadow-md transition-all hover:shadow-lg dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
               >
                 <IconBrandGoogle className="h-5 w-5 text-neutral-800 dark:text-neutral-300" />
-                <span className="text-sm">Google</span>
+                <span className="text-sm">Log In with Google</span>
                 <BottomGradient />
               </button>
             </div>
@@ -210,7 +211,9 @@ const Login = () => {
           <p className="max-w-sm mt-6 text-sm text-center text-neutral-600 dark:text-neutral-400">
             Don't have an account?{" "}
             <a href="/register" className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 font-medium transition-colors">
-              Sign up
+              {/* <LinkPreview url="https://tailwindcss.com" className="font-bold"> */}
+                Sign up
+              {/* </LinkPreview> */}
             </a>
           </p>
         </div>

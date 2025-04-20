@@ -167,7 +167,7 @@ const Register = () => {
               type="button"
             >
               <IconBrandGoogle className="h-5 w-5 text-neutral-800 dark:text-neutral-300" />
-              <span className="text-sm">Sign up with Google as {role}</span>
+              <span className="text-sm">Sign up with Google</span>
               <BottomGradient />
             </button>
           </div>

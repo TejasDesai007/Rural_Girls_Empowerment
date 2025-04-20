@@ -33,6 +33,7 @@ import Checkout from "./pages/entrepreneur/Checkout";
 import PaymentMethodPage from "./pages/entrepreneur/PaymentMethod";
 import AdminNotification from "./pages/AdminNotification";
 
+import EntrepreneurCorner from "./pages/entrepreneur/EntrepreneurCorner";
 
 
 //Mentor imports
@@ -99,12 +100,12 @@ function App() {
             <Route path="/my-profile" element={<MyProfile />} />
             <Route path="/addtoolkit" element={<AddToolkit />} />
             <Route path="/toolkit" element={<Toolkit />} />
-            <Route path="/Entrepreneurship" element={<Entrepreneurship />} />
+            <Route path="/entrepreneurship" element={<Entrepreneurship />} />
             <Route path="/products/:id" element={<ProductDetails />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/payment-method" element={<PaymentMethodPage />} />
 
-
+            <Route path="/entrepreneurship-corner" element={<EntrepreneurCorner />} />
 
 
             {/* Admin Routes */}
