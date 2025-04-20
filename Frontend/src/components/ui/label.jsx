@@ -1,21 +1,27 @@
-import * as React from "react"
-import * as LabelPrimitive from "@radix-ui/react-label"
+"use client";
+import * as React from "react";
+import * as LabelPrimitive from "@radix-ui/react-label";
 
-import { cn } from "@/lib/utils"
+// Simple utility function to replace the cn import
+const cn = (...classes) => {
+  return classes.filter(Boolean).join(" ");
+};
 
-function Label({
-  className,
-  ...props
-}) {
+const Label = React.forwardRef(function Label(props, ref) {
+  const { className, ...restProps } = props;
+  
   return (
     <LabelPrimitive.Root
-      data-slot="label"
+      ref={ref}
       className={cn(
-        "flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
+        "text-sm font-medium text-black dark:text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
         className
       )}
-      {...props} />
+      {...restProps} 
+    />
   );
-}
+});
 
-export { Label }
+Label.displayName = LabelPrimitive.Root.displayName;
+
+export { Label };

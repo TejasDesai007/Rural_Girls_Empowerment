@@ -20,10 +20,11 @@ import {
     DialogTitle,
     DialogFooter,
 } from "@/components/ui/dialog";
-import { Loader2, CheckCircle, AlertCircle, Bell, Trash2, Eye } from "lucide-react";
+import { Loader2, CheckCircle, AlertCircle, Bell, Trash2, Eye, Sparkles } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { getAuth } from "firebase/auth";
+import { motion } from "framer-motion";
 
 const MentorNotification = () => {
     const [notifications, setNotifications] = useState([]);
@@ -166,193 +167,236 @@ const MentorNotification = () => {
         }).format(date);
     };
 
-    return (
-        <div className="max-w-3xl mx-auto p-4">
-            <Toaster position="top-right" richColors />
+    // Animation variants for cards
+    const cardVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: i => ({
+            opacity: 1,
+            y: 0,
+            transition: {
+                delay: i * 0.1,
+                duration: 0.5,
+                ease: "easeOut"
+            }
+        })
+    };
 
-            <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-3">
-                    <h2 className="text-lg font-semibold">Notifications</h2>
-                    <Badge variant="outline" className="bg-orange-50 text-orange-600 border-orange-200">
-                        <Bell className="w-3 h-3 mr-1" />
-                        {notifications.filter((n) => !n.read).length} Unread
-                    </Badge>
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 pt-8 pb-12">
+            <div className="max-w-3xl mx-auto p-6 rounded-xl backdrop-blur-sm bg-white/80 shadow-lg border border-pink-100 animate-fade-in">
+                <Toaster position="top-right" richColors />
+
+                <div className="flex justify-between items-center mb-8">
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">Notifications</h2>
+                        <Badge variant="outline" className="bg-pink-50 text-pink-600 border-pink-200 animate-pulse">
+                            <Bell className="w-3 h-3 mr-1" />
+                            {notifications.filter((n) => !n.read).length} Unread
+                        </Badge>
+                    </div>
+
+                    <div className="flex gap-2">
+                        <select
+                            value={filter}
+                            onChange={(e) => applyFilter(e.target.value)}
+                            className="border rounded-md px-3 py-1 text-sm bg-white/80 backdrop-blur-sm border-pink-200 focus:border-purple-400 focus:ring focus:ring-purple-200 transition-all duration-300"
+                        >
+                            <option value="all">All</option>
+                            <option value="unread">Unread</option>
+                            <option value="mentee">Mentee</option>
+                            <option value="course">Course</option>
+                        </select>
+                        <Button
+                            variant="outline"
+                            onClick={handleMarkAllAsRead}
+                            disabled={loading}
+                            size="sm"
+                            className="text-xs bg-gradient-to-r from-pink-100 to-purple-100 hover:from-pink-200 hover:to-purple-200 border-pink-200 text-pink-700 transition-all duration-300"
+                        >
+                            {loading ? <Loader2 className="animate-spin w-3 h-3" /> : "Mark All Read"}
+                        </Button>
+                    </div>
                 </div>
 
-                <div className="flex gap-2">
-                    <select
-                        value={filter}
-                        onChange={(e) => applyFilter(e.target.value)}
-                        className="border rounded-md px-3 py-1 text-sm bg-white"
-                    >
-                        <option value="all">All</option>
-                        <option value="unread">Unread</option>
-                        <option value="mentee">Mentee</option>
-                        <option value="course">Course</option>
-                    </select>
+                <div className="flex gap-3 mb-8">
                     <Button
-                        variant="outline"
-                        onClick={handleMarkAllAsRead}
-                        disabled={loading}
+                        onClick={async () => {
+                            try {
+                                await addDoc(collection(db, "notifications"), {
+                                    title: "✨ New Test Notification",
+                                    description: "This is a test notification with some sparkle!",
+                                    type: "course",
+                                    read: false,
+                                    createdAt: new Date(),
+                                });
+                                toast.success("Test notification added!");
+                            } catch (error) {
+                                toast.error("Failed to add test notification");
+                                console.error(error);
+                            }
+                        }}
                         size="sm"
-                        className="text-xs"
+                        className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-md transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1"
                     >
-                        {loading ? <Loader2 className="animate-spin w-3 h-3" /> : "Mark All Read"}
+                        <Sparkles className="w-3 h-3 mr-1" />
+                        Add Test Notification
+                    </Button>
+
+                    <Button
+                        onClick={handleDeleteAll}
+                        variant="destructive"
+                        size="sm"
+                        className="text-xs bg-gradient-to-r from-red-400 to-pink-400 hover:from-red-500 hover:to-pink-500 border-none transition-all duration-300 transform hover:-translate-y-1"
+                    >
+                        <Trash2 className="w-3 h-3 mr-1" />
+                        Delete All
                     </Button>
                 </div>
-            </div>
 
-            <div className="flex gap-3 mb-6">
-                <Button
-                    onClick={async () => {
-                        try {
-                            await addDoc(collection(db, "notifications"), {
-                                title: "🔔 Manual Test Notification",
-                                description: "This is a test triggered by the button.",
-                                type: "course",
-                                read: false,
-                                createdAt: new Date(),
-                            });
-                            toast.success("Manual test notification added!");
-                        } catch (error) {
-                            toast.error("Failed to add test notification");
-                            console.error(error);
-                        }
-                    }}
-                    size="sm"
-                    className="text-xs"
-                >
-                    ➕ Add Test Notification
-                </Button>
-
-                <Button
-                    onClick={handleDeleteAll}
-                    variant="destructive"
-                    size="sm"
-                    className="text-xs"
-                >
-                    <Trash2 className="w-3 h-3 mr-1" />
-                    Delete All
-                </Button>
-            </div>
-
-            {loading ? (
-                <div className="flex justify-center py-10">
-                    <Loader2 className="animate-spin w-8 h-8 text-orange-500" />
-                </div>
-            ) : (
-                <div className="space-y-2">
-                    {filteredNotifications.length > 0 ? (
-                        filteredNotifications.map((n) => (
-                            <Card
-                                key={n.id}
-                                className={`border shadow-sm ${n.read ? "bg-gray-50" : "bg-white border-l-4 border-l-orange-500"}`}
-                            >
-                                <CardContent className="p-3">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2">
-                                                <h3 className="text-sm font-medium">
-                                                    {n.title}
-                                                </h3>
-                                                <Badge variant="outline" className={`text-xs py-0 h-5 ${n.type === 'mentee' ? 'bg-blue-50 text-blue-600 border-blue-200' :
-                                                        'bg-green-50 text-green-600 border-green-200'
-                                                    }`}>
-                                                    {n.type}
-                                                </Badge>
-                                                {!n.read && (
-                                                    <span className="inline-block w-2 h-2 bg-orange-500 rounded-full"></span>
-                                                )}
-                                            </div>
-
-                                            <p className="text-xs text-gray-500 mt-1">{formatDate(n.createdAt)}</p>
-                                        </div>
-
-                                        <div className="flex gap-1">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => setModalNotification(n)}
-                                                className="h-7 w-7 p-0"
-                                                title="View Details"
-                                            >
-                                                <Eye className="w-4 h-4 text-gray-500" />
-                                            </Button>
-
-                                            {!n.read && (
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => handleMarkAsRead(n.id)}
-                                                    className="h-7 w-7 p-0"
-                                                    title="Mark as Read"
-                                                >
-                                                    <CheckCircle className="w-4 h-4 text-green-500" />
-                                                </Button>
-                                            )}
-
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => handleDeleteNotification(n.id)}
-                                                className="h-7 w-7 p-0"
-                                                title="Delete"
-                                            >
-                                                <Trash2 className="w-4 h-4 text-red-500" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))
-                    ) : (
-                        <div className="text-center py-10 border rounded-lg bg-gray-50">
-                            <Bell className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-                            <p className="text-gray-500">No notifications found</p>
+                {loading ? (
+                    <div className="flex justify-center py-16">
+                        <div className="relative">
+                            <div className="w-16 h-16 rounded-full border-4 border-t-purple-500 border-r-pink-500 border-b-blue-500 border-l-pink-300 animate-spin"></div>
+                            <Loader2 className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-pink-500 animate-pulse" />
                         </div>
-                    )}
-                </div>
-            )}
-
-            {modalNotification && (
-                <Dialog open={true} onOpenChange={() => setModalNotification(null)}>
-                    <DialogContent className="max-w-md">
-                        <DialogHeader>
-                            <div className="flex items-center gap-2">
-                                <DialogTitle>{modalNotification.title}</DialogTitle>
-                                <Badge variant="outline" className={`text-xs ${modalNotification.type === 'mentee' ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'
-                                    }`}>
-                                    {modalNotification.type}
-                                </Badge>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1">{formatDate(modalNotification.createdAt)}</p>
-                        </DialogHeader>
-                        <div className="text-sm text-gray-700 border-t pt-3 mt-2">
-                            {modalNotification.description}
-                        </div>
-                        <DialogFooter className="flex justify-between items-center">
-                            <div>
-                                {!modalNotification.read && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                            handleMarkAsRead(modalNotification.id);
-                                            setModalNotification({ ...modalNotification, read: true });
-                                        }}
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {filteredNotifications.length > 0 ? (
+                            filteredNotifications.map((n, i) => (
+                                <motion.div
+                                    key={n.id}
+                                    custom={i}
+                                    initial="hidden"
+                                    animate="visible"
+                                    variants={cardVariants}
+                                    whileHover={{ scale: 1.02 }}
+                                    className="transform transition-all duration-300"
+                                >
+                                    <Card
+                                        className={`border shadow-sm overflow-hidden ${n.read ? "bg-white/60" : "bg-white/90 border-l-4 border-l-pink-400"}`}
                                     >
-                                        <CheckCircle className="w-4 h-4 mr-1" />
-                                        Mark as Read
-                                    </Button>
-                                )}
+                                        <CardContent className="p-4">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <h3 className="text-sm font-medium text-gray-800">
+                                                            {n.title}
+                                                        </h3>
+                                                        <Badge variant="outline" className={`text-xs py-0 h-5 ${n.type === 'mentee' ? 'bg-purple-50 text-purple-600 border-purple-200' :
+                                                            'bg-pink-50 text-pink-600 border-pink-200'
+                                                            }`}>
+                                                            {n.type}
+                                                        </Badge>
+                                                        {!n.read && (
+                                                            <span className="inline-block w-2 h-2 bg-pink-500 rounded-full animate-pulse"></span>
+                                                        )}
+                                                    </div>
+
+                                                    <p className="text-xs text-gray-500 mt-1">{formatDate(n.createdAt)}</p>
+                                                    
+                                                    <p className="text-xs text-gray-600 mt-2 line-clamp-1">{n.description}</p>
+                                                </div>
+
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => setModalNotification(n)}
+                                                        className="h-8 w-8 p-0 rounded-full hover:bg-pink-100 hover:text-pink-600 transition-all duration-300"
+                                                        title="View Details"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </Button>
+
+                                                    {!n.read && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => handleMarkAsRead(n.id)}
+                                                            className="h-8 w-8 p-0 rounded-full hover:bg-green-100 hover:text-green-600 transition-all duration-300"
+                                                            title="Mark as Read"
+                                                        >
+                                                            <CheckCircle className="w-4 h-4" />
+                                                        </Button>
+                                                    )}
+
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => handleDeleteNotification(n.id)}
+                                                        className="h-8 w-8 p-0 rounded-full hover:bg-red-100 hover:text-red-600 transition-all duration-300"
+                                                        title="Delete"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </motion.div>
+                            ))
+                        ) : (
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5 }}
+                                className="text-center py-16 border rounded-lg bg-white/60 backdrop-blur-sm shadow-inner"
+                            >
+                                <div className="bg-gradient-to-r from-purple-200 to-pink-200 w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4">
+                                    <Bell className="w-10 h-10 text-purple-500" />
+                                </div>
+                                <h3 className="text-lg font-medium text-gray-600 mb-1">No notifications yet</h3>
+                                <p className="text-gray-500">Your notifications will appear here</p>
+                            </motion.div>
+                        )}
+                    </div>
+                )}
+
+                {modalNotification && (
+                    <Dialog open={true} onOpenChange={() => setModalNotification(null)}>
+                        <DialogContent className="max-w-md bg-gradient-to-br from-white to-pink-50 border border-pink-100">
+                            <DialogHeader>
+                                <div className="flex items-center gap-2">
+                                    <DialogTitle className="text-lg text-gray-800">{modalNotification.title}</DialogTitle>
+                                    <Badge variant="outline" className={`text-xs ${modalNotification.type === 'mentee' ? 'bg-purple-50 text-purple-600 border-purple-200' : 'bg-pink-50 text-pink-600 border-pink-200'
+                                        }`}>
+                                        {modalNotification.type}
+                                    </Badge>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">{formatDate(modalNotification.createdAt)}</p>
+                            </DialogHeader>
+                            <div className="text-sm text-gray-700 border-t border-pink-100 pt-4 mt-2">
+                                {modalNotification.description}
                             </div>
-                            <Button onClick={() => setModalNotification(null)}>
-                                Close
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-            )}
+                            <DialogFooter className="flex justify-between items-center">
+                                <div>
+                                    {!modalNotification.read && (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                handleMarkAsRead(modalNotification.id);
+                                                setModalNotification({ ...modalNotification, read: true });
+                                            }}
+                                            className="bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 text-green-600 border-green-200"
+                                        >
+                                            <CheckCircle className="w-4 h-4 mr-1" />
+                                            Mark as Read
+                                        </Button>
+                                    )}
+                                </div>
+                                <Button 
+                                    onClick={() => setModalNotification(null)}
+                                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow transition-all duration-300"
+                                >
+                                    Close
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                )}
+            </div>
         </div>
     );
 };
