@@ -1,40 +1,41 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { FcGoogle } from "react-icons/fc";
 import { auth, provider } from "../firebase";
-import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
-import axios from "axios";
+import { 
+  signInWithEmailAndPassword, 
+  signInWithPopup, 
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  getAdditionalUserInfo
+} from "firebase/auth";
+import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
 
 import React from "react";
 import { Label } from "../components/ui/label";
 import { Input } from "../components/ui/input";
 import { cn } from "../lib/utils";
 import {
-  IconBrandGithub,
   IconBrandGoogle,
   IconUser,
-  IconHeartHandshake,
-  IconBriefcase,
-  IconLock,
 } from "@tabler/icons-react";
 
 import logo from "../assets/icons/logo.png";
-import { LinkPreview } from "@/components/ui/link-preview";
 
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [role, setRole] = useState("user");
   const [isVisible, setIsVisible] = useState(false);
-
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
-
   const [errors, setErrors] = useState({});
+  
+  // Initialize Firestore
+  const db = getFirestore();
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.id]: e.target.value }));
@@ -76,26 +77,43 @@ const Login = () => {
     if (!validateForm()) return;
 
     try {
-      const response = await axios.post(
-        "http://localhost:5000/api/auth/login",
-        {
-          email: formData.email,
-          password: formData.password,
-          role,
-        },
-        {
-          withCredentials: true,
-          headers: {
-            "Content-Type": "application/json"
-          }
-        }
+      // Sign in with Firebase Authentication
+      const userCredential = await signInWithEmailAndPassword(
+        auth, 
+        formData.email, 
+        formData.password
       );
-
-      const data = response.data;
-      sessionStorage.setItem("user", JSON.stringify(data));
-      sessionStorage.setItem("role", data.role);
-      alert(`Welcome ${data.name}`);
-      handleRedirectAfterLogin(data.role);
+      
+      const user = userCredential.user;
+      
+      // Get user data from Firestore
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+      
+      let userData;
+      
+      if (userDoc.exists()) {
+        userData = userDoc.data();
+      } else {
+        // If user doesn't exist in Firestore yet, create a basic profile
+        userData = {
+          uid: user.uid,
+          email: user.email,
+          name: user.displayName || user.email.split('@')[0],
+          role: role,
+          createdAt: new Date().toISOString()
+        };
+        
+        // Save to Firestore
+        await setDoc(userDocRef, userData);
+      }
+      
+      // Store user data in session storage
+      sessionStorage.setItem("user", JSON.stringify(userData));
+      sessionStorage.setItem("role", userData.role);
+      
+      alert(`Welcome ${userData.name}`);
+      handleRedirectAfterLogin(userData.role);
     } catch (err) {
       console.error("Login failed:", err);
       alert("Invalid credentials or user does not exist.");
@@ -104,33 +122,70 @@ const Login = () => {
 
   const handleGoogleAuth = async () => {
     try {
+      // Sign in with Google via Firebase Authentication
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-      const idToken = await user.getIdToken();
-
-      const response = await axios.post(
-        "http://localhost:5000/api/auth/google",
-        { idToken, role },
-        {
-          withCredentials: true,
-          headers: {
-            "Content-Type": "application/json"
-          }
-        }
-      );
-
-      const data = response.data;
-
-      sessionStorage.setItem("user", JSON.stringify(data));
-      sessionStorage.setItem("role", data.role);
-
-      alert(`Welcome ${data.name}!`);
-      handleRedirectAfterLogin(data.role);
+      
+      // Check if this is a new user
+      const isNewUser = getAdditionalUserInfo(result)?.isNewUser;
+      
+      // Get or create user document in Firestore
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+      
+      let userData;
+      
+      if (userDoc.exists()) {
+        userData = userDoc.data();
+      } else {
+        // Create new user profile
+        userData = {
+          uid: user.uid,
+          email: user.email,
+          name: user.displayName || user.email.split('@')[0],
+          photoURL: user.photoURL,
+          role: role,
+          createdAt: new Date().toISOString()
+        };
+        
+        // Save to Firestore
+        await setDoc(userDocRef, userData);
+      }
+      
+      // Store user data in session storage
+      sessionStorage.setItem("user", JSON.stringify(userData));
+      sessionStorage.setItem("role", userData.role);
+      
+      alert(`Welcome ${userData.name}!`);
+      handleRedirectAfterLogin(userData.role);
     } catch (error) {
       console.error("Google sign-in failed:", error);
       alert("Google sign-in failed. Please try again.");
     }
   };
+
+  // Listen for auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // User is signed in, fetch their details from Firestore
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+        
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          sessionStorage.setItem("user", JSON.stringify(userData));
+          sessionStorage.setItem("role", userData.role);
+        }
+      } else {
+        // User is signed out
+        sessionStorage.removeItem("user");
+        sessionStorage.removeItem("role");
+      }
+    });
+    
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     document.title = "Login | Rural Empowerment";
@@ -171,10 +226,9 @@ const Login = () => {
             Welcome Back
           </h2>
 
-
           <form className="mt-8" onSubmit={handleSubmit}>
             <div className="space-y-6">
-              {/* Email field - uncomment if needed
+              {/* Email field */}
               <LabelInputContainer>
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -187,11 +241,33 @@ const Login = () => {
                 />
                 {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
               </LabelInputContainer>
-              */}
 
-              <div className="relative flex items-center justify-center my-6">
+              {/* Password field */}
+              <LabelInputContainer>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  placeholder="••••••••"
+                  type="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={`${errors.password ? 'border-red-500' : ''}`}
+                />
+                {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
+              </LabelInputContainer>
+
+              {/* Login button */}
+              <button
+                type="submit"
+                className="group/btn relative flex h-12 w-full items-center justify-center space-x-2 rounded-lg bg-gradient-to-br from-purple-600 to-pink-600 px-4 font-medium text-white transition-all hover:from-purple-700 hover:to-pink-700"
+              >
+                <span className="text-sm">Log In with Email</span>
+                <BottomGradient />
+              </button>
+
+              <div className="relative flex items-center justify-center my-4">
                 <div className="w-full border-t border-gray-300 dark:border-gray-700"></div>
-                <div className="bg-white/80 dark:bg-black/50 text-sm px-3 text-neutral-500 absolute">Sign in with</div>
+                <div className="bg-white/80 dark:bg-black/50 text-sm px-3 text-neutral-500 absolute">or</div>
               </div>
 
               <button
@@ -206,14 +282,11 @@ const Login = () => {
             </div>
           </form>
 
-
           {/* Link to sign up */}
           <p className="max-w-sm mt-6 text-sm text-center text-neutral-600 dark:text-neutral-400">
             Don't have an account?{" "}
             <a href="/register" className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 font-medium transition-colors">
-              {/* <LinkPreview url="https://tailwindcss.com" className="font-bold"> */}
-                Sign up
-              {/* </LinkPreview> */}
+              Sign up
             </a>
           </p>
         </div>

@@ -252,24 +252,43 @@ Query: ${newPrompt}`;
 
   // Update quick prompts based on selected language
   const getQuickPrompts = () => {
-    if (selectedLang === 'en-IN') {
-      return [
-        "What is Sukanya Samriddhi Yojana?",
-        "Scholarships for women",
-        "What is blockchain?",
-        "Ayushman Bharat scheme",
-        "New Education Policy"
-      ];
-    } else {
-      return [
-        "सुकन्या समृद्धि योजना",
-        "महिलाओं के लिए छात्रवृत्ति",
-        "ब्लॉकचेन क्या है?",
-        "आयुष्मान भारत योजना",
-        "नई शिक्षा नीति"
-      ];
+    switch (selectedLang) {
+      case 'hi-IN':
+        return [
+          "सुकन्या समृद्धि योजना",
+          "महिलाओं के लिए छात्रवृत्ति",
+          "ब्लॉकचेन क्या है?",
+          "आयुष्मान भारत योजना",
+          "नई शिक्षा नीति"
+        ];
+      case 'mr-IN':
+        return [
+          "सुकन्या समृद्धी योजना काय आहे?",
+          "महिलांसाठी शिष्यवृत्ती",
+          "ब्लॉकचेन म्हणजे काय?",
+          "आयुष्मान भारत योजना",
+          "नवीन शिक्षण धोरण"
+        ];
+      case 'ta-IN':
+        return [
+          "சுகன்யா சம்ருத்தி யோஜனா என்ன?",
+          "பெண்களுக்கு உதவித்தொகைகள்",
+          "பிளாக்செயின் என்பது என்ன?",
+          "ஆயுஷ்மான் பாரத் திட்டம்",
+          "புதிய கல்வி கொள்கை"
+        ];
+      case 'en-IN':
+      default:
+        return [
+          "What is Sukanya Samriddhi Yojana?",
+          "Scholarships for women",
+          "What is blockchain?",
+          "Ayushman Bharat scheme",
+          "New Education Policy"
+        ];
     }
   };
+
 
   const getWelcomeMessage = () => {
     if (selectedLang === 'en-IN') {
@@ -285,14 +304,14 @@ Query: ${newPrompt}`;
   };
 
   return (
-    <motion.div 
+    <motion.div
       className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-white p-4 md:p-8"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-        <motion.h2 
+        <motion.h2
           className="text-2xl md:text-3xl font-bold text-gray-800"
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -302,7 +321,7 @@ Query: ${newPrompt}`;
         </motion.h2>
 
         <div className="flex gap-3 items-center">
-          <motion.div 
+          <motion.div
             className="flex items-center bg-white rounded-md border p-1"
             whileHover={{ scale: 1.03 }}
             transition={{ type: "spring", stiffness: 400, damping: 10 }}
@@ -320,7 +339,7 @@ Query: ${newPrompt}`;
             </select>
           </motion.div>
 
-          <motion.div 
+          <motion.div
             className="relative inline-block"
             whileTap={{ scale: 0.95 }}
           >
@@ -335,9 +354,9 @@ Query: ${newPrompt}`;
                 {voiceResponse ? "Voice output on" : "Voice output off"}
               </div>
             </Button>
-            
+
             {voiceResponse && synthRef.current?.speaking && (
-              <motion.div 
+              <motion.div
                 className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -362,7 +381,7 @@ Query: ${newPrompt}`;
         </div>
       </div>
 
-      <motion.div 
+      <motion.div
         className="flex flex-wrap justify-center gap-3 mb-6"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -391,14 +410,14 @@ Query: ${newPrompt}`;
         </AnimatePresence>
       </motion.div>
 
-      <motion.div 
+      <motion.div
         className="flex-1 bg-white rounded-xl shadow-inner p-4 overflow-y-auto border border-gray-200 mb-4 min-h-[40vh] flex flex-col"
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.4, duration: 0.5 }}
       >
         {messages.length === 0 && !loading ? (
-          <motion.div 
+          <motion.div
             className="text-gray-400 text-center my-auto flex flex-col items-center gap-3"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -410,7 +429,7 @@ Query: ${newPrompt}`;
             >
               {getWelcomeMessage()}
             </motion.p>
-            <motion.div 
+            <motion.div
               className="flex gap-2 text-sm bg-pink-50 p-2 rounded-md text-pink-500"
               whileHover={{ y: -2 }}
             >
@@ -435,7 +454,7 @@ Query: ${newPrompt}`;
                     : msg.content.startsWith("❌")
                       ? "bg-red-100 text-red-700 rounded-bl-none"
                       : "bg-gray-100 text-gray-700 rounded-bl-none"
-                  }`}
+                    }`}
                 >
                   {msg.content.split("\n").map((line, i) => (
                     <span key={i}>
@@ -457,7 +476,7 @@ Query: ${newPrompt}`;
           </AnimatePresence>
         )}
         {loading && (
-          <motion.div 
+          <motion.div
             className="flex justify-start items-center mt-2 text-gray-500"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -469,13 +488,22 @@ Query: ${newPrompt}`;
             >
               <LoaderCircle className="w-4 h-4 mr-2" />
             </motion.div>
-            <span>{selectedLang === 'en-IN' ? 'Processing...' : 'प्रसंस्करण...'}</span>
+            <span>
+              {selectedLang === 'hi-IN'
+                ? 'प्रसंस्करण...'
+                : selectedLang === 'mr-IN'
+                  ? 'प्रक्रिया सुरू आहे...'
+                  : selectedLang === 'ta-IN'
+                    ? 'செயலாக்கம் நடைபெற்று வருகிறது...'
+                    : 'Processing...'}
+            </span>
           </motion.div>
         )}
+
         <div ref={messagesEndRef} />
       </motion.div>
 
-      <motion.div 
+      <motion.div
         className="flex flex-col sm:flex-row gap-3 items-center"
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -498,14 +526,20 @@ Query: ${newPrompt}`;
               disabled={loading || !input.trim()}
               className="flex-grow sm:flex-grow-0 bg-pink-500 text-white hover:bg-pink-700 disabled:bg-gray-400 disabled:text-gray-300 transition-all duration-300"
             >
-              {loading ?
-                <LoaderCircle className="animate-spin w-4 h-4" /> :
-                selectedLang === 'en-IN' ? "Send" : "भेजें"
-              }
+              {loading ? (
+                <LoaderCircle className="animate-spin w-4 h-4" />
+              ) : (
+                {
+                  'en-IN': 'Send',
+                  'hi-IN': 'भेजें',
+                  'mr-IN': 'पाठवा',
+                  'ta-IN': 'அனுப்பு'
+                }[selectedLang] || 'Send'
+              )}
             </Button>
           </motion.div>
 
-          <motion.div 
+          <motion.div
             className="relative inline-block"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -519,15 +553,15 @@ Query: ${newPrompt}`;
             >
               {listening ? <MicOff size={18} /> : <Mic size={18} />}
             </Button>
-            
+
             {listening && (
-              <motion.div 
+              <motion.div
                 className="absolute -top-2 -right-2 bg-red-500 rounded-full h-3 w-3"
                 animate={{ scale: [1, 1.2, 1] }}
                 transition={{ repeat: Infinity, duration: 1.5 }}
               />
             )}
-            
+
             <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 pointer-events-none">
               {listening ? "Stop voice input" : "Start voice input"}
             </div>
@@ -540,9 +574,15 @@ Query: ${newPrompt}`;
               disabled={loading}
               className="flex-grow sm:flex-grow-0"
             >
-              {selectedLang === 'en-IN' ? "Clear" : "साफ करें"}
+              {{
+                'en-IN': "Clear",
+                'hi-IN': "साफ करें",
+                'mr-IN': "साफ करा",
+                'ta-IN': "தெளிவாக"
+              }[selectedLang] || "Clear"}
             </Button>
           </motion.div>
+
         </div>
       </motion.div>
     </motion.div>

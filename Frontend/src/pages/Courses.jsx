@@ -1,4 +1,3 @@
-// src/pages/Courses.jsx
 import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -9,6 +8,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { motion } from "framer-motion";
 import { Search, Book, Star, Clock, User } from "lucide-react";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { db } from "@/firebase"; // Make sure you have your firebase config exported as db
 
 const Courses = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -30,24 +31,19 @@ const Courses = () => {
           return;
         }
 
-        const token = await user.getIdToken();
-        const response = await fetch("http://localhost:5000/api/courses/getCourses", {
-          method: "GET",
-          headers: {
-            "Authorization": `Bearer ${token}`
-          }
-        });
+        // Fetch courses directly from Firestore
+        const coursesCollection = collection(db, "courses");
+        const coursesSnapshot = await getDocs(coursesCollection);
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to fetch courses");
-        }
+        const coursesData = coursesSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
 
-        const result = await response.json();
-        setCourses(Array.isArray(result.data) ? result.data : []);
+        setCourses(coursesData);
       } catch (error) {
         console.error("Error fetching courses:", error);
-        toast.error(error.message || "Failed to load courses");
+        toast.error("Failed to load courses");
         setCourses([]);
       } finally {
         setLoading(false);
@@ -77,7 +73,7 @@ const Courses = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 to-purple-50">
-        <motion.div 
+        <motion.div
           className="h-20 w-20 rounded-full border-4 border-pink-400 border-t-transparent"
           animate={{ rotate: 360 }}
           transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
@@ -112,7 +108,7 @@ const Courses = () => {
 };
 
 const PageHeader = () => (
-  <motion.section 
+  <motion.section
     initial={{ opacity: 0, y: -20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.8 }}
@@ -120,7 +116,7 @@ const PageHeader = () => (
   >
     <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
     <div className="relative z-10">
-      <motion.h1 
+      <motion.h1
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.8 }}
@@ -128,7 +124,7 @@ const PageHeader = () => (
       >
         Browse Learning Modules
       </motion.h1>
-      <motion.p 
+      <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4, duration: 0.8 }}
@@ -137,7 +133,7 @@ const PageHeader = () => (
         Explore curated courses designed to empower rural entrepreneurs with essential skills and knowledge
       </motion.p>
     </div>
-    <motion.div 
+    <motion.div
       className="absolute -bottom-12 left-0 right-0 h-24 bg-gradient-to-b from-transparent to-white/70"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -147,7 +143,7 @@ const PageHeader = () => (
 );
 
 const SearchBar = ({ searchTerm, setSearchTerm }) => (
-  <motion.div 
+  <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5 }}
@@ -175,7 +171,7 @@ const CategorySidebar = ({
   setSelectedDifficulty
 }) => {
   return (
-    <motion.aside 
+    <motion.aside
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.5 }}
@@ -184,7 +180,7 @@ const CategorySidebar = ({
       <h3 className="font-bold mb-4 text-pink-600 text-lg">Categories</h3>
       <ul className="space-y-2 mb-8">
         {categories.map((cat, index) => (
-          <motion.li 
+          <motion.li
             key={cat}
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
@@ -192,11 +188,10 @@ const CategorySidebar = ({
           >
             <Button
               variant={selectedCategory === cat ? "default" : "ghost"}
-              className={`w-full justify-start text-left ${
-                selectedCategory === cat 
-                  ? "bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white" 
+              className={`w-full justify-start text-left ${selectedCategory === cat
+                  ? "bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white"
                   : "text-gray-700 hover:text-pink-600 hover:bg-pink-50"
-              }`}
+                }`}
               onClick={() => setSelectedCategory(cat)}
             >
               {cat}
@@ -204,11 +199,11 @@ const CategorySidebar = ({
           </motion.li>
         ))}
       </ul>
-      
+
       <h3 className="font-bold mb-4 text-pink-600 text-lg">Difficulty</h3>
       <ul className="space-y-2">
         {difficulties.map((difficulty, index) => (
-          <motion.li 
+          <motion.li
             key={difficulty}
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
@@ -216,11 +211,10 @@ const CategorySidebar = ({
           >
             <Button
               variant={selectedDifficulty === difficulty ? "default" : "ghost"}
-              className={`w-full justify-start text-left ${
-                selectedDifficulty === difficulty 
-                  ? "bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white" 
+              className={`w-full justify-start text-left ${selectedDifficulty === difficulty
+                  ? "bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white"
                   : "text-gray-700 hover:text-pink-600 hover:bg-pink-50"
-              }`}
+                }`}
               onClick={() => setSelectedDifficulty(difficulty)}
             >
               {difficulty}
@@ -277,8 +271,8 @@ const CourseCard = ({ course, index }) => {
   // Determine difficulty color
   const getDifficultyColor = (difficulty) => {
     if (!difficulty) return "bg-gray-100 text-gray-600";
-    
-    switch(difficulty.toLowerCase()) {
+
+    switch (difficulty.toLowerCase()) {
       case 'beginner':
         return "bg-green-100 text-green-700 border-green-200";
       case 'intermediate':
@@ -304,14 +298,14 @@ const CourseCard = ({ course, index }) => {
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          
+
           <div className="absolute right-2 top-2">
             <Badge className={`${getDifficultyColor(course.difficulty)}`}>
               {course.difficulty || "All Levels"}
             </Badge>
           </div>
         </div>
-        
+
         <CardHeader className="pb-2">
           <CardTitle className="text-xl font-bold group-hover:text-pink-600 transition-colors duration-300">
             {course.title}
@@ -320,46 +314,46 @@ const CourseCard = ({ course, index }) => {
             {course.description}
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent className="flex-grow pt-0">
           <div className="flex flex-wrap gap-2 mb-4">
             <Badge variant="outline" className="bg-pink-50 text-pink-600 border-pink-200 hover:bg-pink-100 transition-colors duration-300">
               {course.category}
             </Badge>
           </div>
-          
+
           <div className="space-y-2 text-sm">
             <div className="flex items-center gap-2">
               <Book className="h-4 w-4 text-pink-400" />
               <span className="text-gray-600">Modules: {course.modules?.length || 0}</span>
             </div>
-            
+
             <div className="flex items-center gap-2">
               <Star className="h-4 w-4 text-pink-400" />
               <span className="text-gray-600">Lessons: {totalLessons}</span>
             </div>
-            
+
             {date && (
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-pink-400" />
                 <span className="text-gray-600">Created: {date}</span>
               </div>
             )}
-            
+
             {renderCreator()}
           </div>
         </CardContent>
-        
+
         <CardFooter className="pt-2">
-          <Button 
-            asChild 
+          <Button
+            asChild
             className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 transition-all duration-300 shadow-md hover:shadow-lg"
           >
             <Link to={`/courses/${course.id}`}>
               <span className="flex items-center justify-center gap-2">
                 View Course
-                <motion.span 
-                  animate={{ x: [0, 4, 0] }} 
+                <motion.span
+                  animate={{ x: [0, 4, 0] }}
                   transition={{ duration: 1, repeat: Infinity, repeatDelay: 1 }}
                 >
                   →
@@ -374,7 +368,7 @@ const CourseCard = ({ course, index }) => {
 };
 
 const EmptyState = ({ setSearchTerm, setSelectedCategory, setSelectedDifficulty }) => (
-  <motion.div 
+  <motion.div
     initial={{ opacity: 0, scale: 0.9 }}
     animate={{ opacity: 1, scale: 1 }}
     transition={{ duration: 0.5 }}

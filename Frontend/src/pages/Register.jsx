@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { FcGoogle } from "react-icons/fc";
 import { auth, provider } from "../firebase";
-import { signInWithPopup } from "firebase/auth";
-import axios from "axios";
-
+import { 
+  signInWithPopup, 
+  createUserWithEmailAndPassword,
+  updateProfile
+} from "firebase/auth";
 import {
   IconBrandGithub,
   IconBrandGoogle,
@@ -18,11 +20,10 @@ import {
 import { Label } from "../components/ui/label";
 import { Input } from "../components/ui/input";
 import { cn } from "../lib/utils";
-
 import logo from "../assets/icons/logo.png";
-
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/firebase";
+import { toast } from "react-hot-toast";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -39,69 +40,97 @@ const Register = () => {
 
   const [errors, setErrors] = useState({});
   const [isVisible, setIsVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleGoogleAuth = async () => {
     try {
+      setLoading(true);
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-      const idToken = await user.getIdToken();
 
-      const response = await axios.post("http://localhost:5000/api/auth/google", {
-        idToken,
-        role,
+      // Save user data to Firestore
+      await addDoc(collection(db, "users"), {
+        uid: user.uid,
+        name: user.displayName || formData.name,
+        email: user.email,
         contact: formData.contact,
-        name: formData.name,
+        role,
+        createdAt: serverTimestamp(),
       });
 
-      const data = response.data;
-      sessionStorage.setItem("user", JSON.stringify(data));
+      // Add admin notification
+      await addDoc(collection(db, "admin_notifications"), {
+        title: `New ${role.charAt(0).toUpperCase() + role.slice(1)} Registered`,
+        description: `${user.displayName || formData.name} registered with role "${role}" via Google.`,
+        createdAt: serverTimestamp(),
+        read: false,
+        additionalData: {
+          name: user.displayName || formData.name,
+          email: user.email,
+          contact: formData.contact,
+          role,
+        },
+      });
 
-      // 🟢 If new user (i.e., just registered)
-      if (!data.alreadyExists) {
-        await addDoc(collection(db, "admin_notifications"), {
-          title: `New ${role.charAt(0).toUpperCase() + role.slice(1)} Registered`,
-          description: `${formData.name} registered with role "${role}" via Google.`,
-          createdAt: serverTimestamp(),
-          read: false,
-          additionalData: {
-            name: formData.name,
-            email: user.email,
-            contact: formData.contact,
-            role,
-          },
-        });
-      }
-
-      alert(data.alreadyExists ? "Welcome back!" : "Account created!");
+      toast.success("Registration successful!");
       navigate("/dashboard");
-
     } catch (error) {
       console.error("Google authentication failed:", error);
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
     }
   };
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
 
     try {
-      const response = await axios.post("http://localhost:5000/api/auth/register", {
-        ...formData,
-        role,
+      setLoading(true);
+      // Create user with email and password
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        formData.email,
+        formData.password
+      );
+
+      // Update user profile with display name
+      await updateProfile(userCredential.user, {
+        displayName: formData.name,
       });
 
-      const data = response.data;
-      sessionStorage.setItem("user", JSON.stringify(data));
-      alert("Account created successfully!");
+      // Save additional user data to Firestore
+      await addDoc(collection(db, "users"), {
+        uid: userCredential.user.uid,
+        name: formData.name,
+        email: formData.email,
+        contact: formData.contact,
+        role,
+        createdAt: serverTimestamp(),
+      });
+
+      // Add admin notification
+      await addDoc(collection(db, "admin_notifications"), {
+        title: `New ${role.charAt(0).toUpperCase() + role.slice(1)} Registered`,
+        description: `${formData.name} registered with role "${role}".`,
+        createdAt: serverTimestamp(),
+        read: false,
+        additionalData: {
+          name: formData.name,
+          email: formData.email,
+          contact: formData.contact,
+          role,
+        },
+      });
+
+      toast.success("Account created successfully!");
       navigate("/dashboard");
-    } catch (err) {
-      if (err.response && err.response.data.message) {
-        alert(err.response.data.message);
-      } else {
-        console.error("Registration failed:", err);
-        alert("Something went wrong.");
-      }
+    } catch (error) {
+      console.error("Registration failed:", error);
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -127,7 +156,6 @@ const Register = () => {
 
   useEffect(() => {
     document.title = "Register | Rural Empowerment";
-    // Animate content visibility on component mount
     const timer = setTimeout(() => setIsVisible(true), 100);
     return () => clearTimeout(timer);
   }, []);
@@ -159,12 +187,118 @@ const Register = () => {
             Empower communities, create change
           </p>
 
+          {/* Role selection */}
+          <div className="mb-6">
+            <ToggleGroup 
+              type="single" 
+              value={role} 
+              onValueChange={setRole}
+              className="grid grid-cols-2 gap-2"
+            >
+              <ToggleGroupItem value="user" className="flex-col h-16 gap-2">
+                <IconUser className="h-5 w-5" />
+                <span>Community Member</span>
+              </ToggleGroupItem>
+              <ToggleGroupItem value="entrepreneur" className="flex-col h-16 gap-2">
+                <IconBriefcase className="h-5 w-5" />
+                <span>Entrepreneur</span>
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+
+          {/* Registration form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <LabelInputContainer>
+              <Label htmlFor="name">Full Name</Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="Enter your full name"
+                value={formData.name}
+                onChange={handleChange}
+                className={errors.name ? "border-red-500" : ""}
+              />
+              {errors.name && <p className="text-red-500 text-xs">{errors.name}</p>}
+            </LabelInputContainer>
+
+            <LabelInputContainer>
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={formData.email}
+                onChange={handleChange}
+                className={errors.email ? "border-red-500" : ""}
+              />
+              {errors.email && <p className="text-red-500 text-xs">{errors.email}</p>}
+            </LabelInputContainer>
+
+            <LabelInputContainer>
+              <Label htmlFor="contact">Phone Number</Label>
+              <Input
+                id="contact"
+                type="tel"
+                placeholder="Enter your 10-digit phone number"
+                value={formData.contact}
+                onChange={handleChange}
+                className={errors.contact ? "border-red-500" : ""}
+              />
+              {errors.contact && <p className="text-red-500 text-xs">{errors.contact}</p>}
+            </LabelInputContainer>
+
+            <LabelInputContainer>
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={handleChange}
+                className={errors.password ? "border-red-500" : ""}
+              />
+              {errors.password && <p className="text-red-500 text-xs">{errors.password}</p>}
+            </LabelInputContainer>
+
+            <LabelInputContainer>
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="••••••••"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                className={errors.confirmPassword ? "border-red-500" : ""}
+              />
+              {errors.confirmPassword && <p className="text-red-500 text-xs">{errors.confirmPassword}</p>}
+            </LabelInputContainer>
+
+            <Button
+              type="submit"
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+              disabled={loading}
+            >
+              {loading ? "Creating account..." : "Create Account"}
+            </Button>
+          </form>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-gray-300 dark:border-gray-700"></span>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white/80 dark:bg-black/50 px-2 text-gray-500 dark:text-gray-400">
+                Or continue with
+              </span>
+            </div>
+          </div>
 
           <div className="flex flex-col space-y-4">
             <button
               onClick={handleGoogleAuth}
               className="group/btn relative flex h-12 w-full items-center justify-center space-x-2 rounded-lg bg-white px-4 font-medium text-black shadow-md transition-all hover:shadow-lg dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
               type="button"
+              disabled={loading}
             >
               <IconBrandGoogle className="h-5 w-5 text-neutral-800 dark:text-neutral-300" />
               <span className="text-sm">Sign up with Google</span>
