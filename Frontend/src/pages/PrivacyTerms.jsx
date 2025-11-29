@@ -85,7 +85,7 @@ const sections = [
         If you have any questions or concerns, please email us at:
         <br />
         <span className="text-pink-700 font-semibold">
-          devrangers@gmail.com
+          shivamdarekar22@gmail.com
         </span>
       </p>
     ),
